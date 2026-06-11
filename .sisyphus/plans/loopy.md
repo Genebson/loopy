@@ -231,7 +231,7 @@ Max Concurrent: 3 (Waves 1, 2, 3)
 
 ### Wave 1 — Foundation (parallel)
 
-- [ ] 1. Monorepo scaffold (pnpm, tsconfig refs, oxlint, vitest, build scripts)
+- [x] 1. Monorepo scaffold (pnpm, tsconfig refs, oxlint, vitest, build scripts)
 
   **What to do**:
   - Create `pnpm-workspace.yaml` with `apps/*` and `packages/*` entries
@@ -324,7 +324,7 @@ Max Concurrent: 3 (Waves 1, 2, 3)
   - Files: `pnpm-workspace.yaml`, `package.json`, `tsconfig.json`, `.oxlintrc.json`, `vitest.config.ts`, `.gitignore`, `AGENTS.md`, `README.md`, `apps/cli/**`, `packages/**/package.json`, `packages/**/tsconfig*.json`
   - Pre-commit: `pnpm install && pnpm typecheck && pnpm lint`
 
-- [ ] 2. @loopy/core — types, interfaces, Zod config schema, errors
+- [x] 2. @loopy/core — types, interfaces, Zod config schema, errors
 
   **What to do**:
   - Define domain types in `packages/core/src/types/`:
@@ -442,7 +442,7 @@ Max Concurrent: 3 (Waves 1, 2, 3)
   - Files: `packages/core/src/types/*`, `packages/core/src/interfaces/*`, `packages/core/src/config/schema.ts`, `packages/core/src/errors/*`, `packages/core/src/index.ts`
   - Pre-commit: `pnpm typecheck && pnpm test --filter @loopy/core`
 
-- [ ] 3. @loopy/test-utils — mock factories for GH and opencode clients
+- [x] 3. @loopy/test-utils — mock factories for GH and opencode clients
 
   **What to do**:
   - Create `packages/test-utils/src/`:
@@ -528,7 +528,7 @@ Max Concurrent: 3 (Waves 1, 2, 3)
 
 ### Wave 2 — Clients (parallel)
 
-- [ ] 4. @loopy/gh — GitHub Projects v2 GraphQL client
+- [x] 4. @loopy/gh — GitHub Projects v2 GraphQL client
 
   **What to do**:
   - Implement `GHClient` interface from `@loopy/core` in `packages/gh/src/client.ts`
@@ -623,7 +623,7 @@ Max Concurrent: 3 (Waves 1, 2, 3)
   - Files: `packages/gh/src/**`
   - Pre-commit: `pnpm typecheck && pnpm lint && pnpm test --filter @loopy/gh`
 
-- [ ] 5. @loopy/opencode — opencode v2 API HTTP client
+- [x] 5. @loopy/opencode — opencode v2 API HTTP client
 
   **What to do**:
   - Implement `OpenCodeClient` interface from `@loopy/core` in `packages/opencode/src/client.ts`
@@ -727,7 +727,7 @@ Max Concurrent: 3 (Waves 1, 2, 3)
 
 ### Wave 3 — Core engine + side-effect implementations (parallel)
 
-- [ ] 6. @loopy/core — loop engine (state machine + transitions)
+- [x] 6. @loopy/core — loop engine (state machine + transitions)
 
   **What to do**:
   - Implement the state machine in `packages/core/src/engine/state-machine.ts` as a pure function `(state, event) → newState`:
@@ -854,7 +854,7 @@ Max Concurrent: 3 (Waves 1, 2, 3)
   - Files: `packages/core/src/engine/**`
   - Pre-commit: `pnpm typecheck && pnpm test --filter @loopy/core`
 
-- [ ] 7. @loopy/core — WorktreeManager (git worktree per task, recovery)
+- [x] 7. @loopy/core — WorktreeManager (git worktree per task, recovery)
 
   **What to do**:
   - Implement `WorktreeManager` in `packages/core/src/worktree/manager.ts`
@@ -957,7 +957,7 @@ Max Concurrent: 3 (Waves 1, 2, 3)
   - Files: `packages/core/src/worktree/**`
   - Pre-commit: `pnpm typecheck && pnpm test --filter @loopy/core`
 
-- [ ] 8. @loopy/core — VerifierRunner (shell command + timeout + env)
+- [x] 8. @loopy/core — VerifierRunner (shell command + timeout + env)
 
   **What to do**:
   - Implement `VerifierRunner` in `packages/core/src/verifier/runner.ts`

@@ -6,4 +6,5 @@ export type { OpenCodeErrorCode } from './opencode-error.js';
 export { WorktreeError } from './worktree-error.js';
 export type { WorktreeErrorCode } from './worktree-error.js';
 export { VerifierError } from './verifier-error.js';
+export type { VerifierErrorCode } from './verifier-error.js';
 export { TimeoutError } from './timeout-error.js';

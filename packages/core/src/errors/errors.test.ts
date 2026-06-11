@@ -69,9 +69,10 @@ describe('LoopyError hierarchy', () => {
     }
   });
 
-  it('VerifierError extends LoopyError', () => {
-    const err = new VerifierError('verify failed');
-    expect(err.code).toBe('VERIFIER_ERROR');
+  it('VerifierError extends LoopyError with code', () => {
+    const err = new VerifierError('COMMAND_NOT_FOUND', 'verify failed');
+    expect(err.code).toBe('COMMAND_NOT_FOUND');
+    expect(err.userMessage).toBe('verify failed');
     expect(err).toBeInstanceOf(LoopyError);
   });
 

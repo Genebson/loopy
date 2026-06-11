@@ -32,3 +32,12 @@
 - **git worktree add**: Must use `git.raw(['worktree', 'add', '-b', branch, path])` since `simple-git` doesn't have a first-class worktree API.
 - **git worktree list porcelain**: Parse output by splitting on `\n\n` for entries, then `\n` for lines within each entry. Branch lines start with `branch refs/heads/` or `branch `.
 - **Integration tests with real git**: Use `simpleGit(dir).init()` + commit to create temp repos. Cleanup in `afterEach` with `fs.promises.rm`. Use `_e` + `void _e` for intentionally empty catch blocks without comments.
+
+## 2026-06-11: Loop Engine Implementation
+
+- **CJS/ESM mock imports**: `@loopy/test-utils` can't be imported from `@loopy/core` tests because the vitest mock factories use `import { vi } from 'vitest'` which fails in CJS context. Solution: write inline mock factories in the test file instead of depending on the test-utils package.
+- **pollPermissions blocking**: The `pollPermissions` method with `autoApprove: true` blocks in a `sleep(1000ms)` loop. In tests, this blocks `processCard` because `await permissionPoller` in the finally block waits for the sleep to complete. Solution: set `autoApprove: false` in test configs, or ensure the signal is aborted quickly.
+- **TypeScript private field assignment**: Cannot cast `this as { projectId: string }` when `projectId` is `private readonly`. Use `(this as unknown as Record<string, string>)[key] = value` pattern for runtime assignment to readonly private fields.
+- **LoopEngine state machine**: Pure function `transition(state, event) → newState` with exhaustive switches. The `processCard` method tracks state locally and persists to `.loopy/state/{issueNumber}.json` after each significant transition.
+- **Card state persistence format**: `CardState` includes `issueNumber`, `state` (LoopState), `retriesLeft`, `branch`, `worktreePath`, timestamps, and `error`. Cards in `Done` or `Blocked` state are skipped on subsequent loops.
+- **pollPermissions stopped callback**: The `stopped()` callback must return `boolean`, not `void`. Use `() => permissionPollingStopped` instead of `() => { permissionPollingStopped = true; }`.
