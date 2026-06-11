@@ -1,7 +1,6 @@
 import { Command } from 'commander';
 import chalk from 'chalk';
-import fs from 'node:fs';
-import { resolve } from 'node:path';
+import { StateStore } from '@loopy/core';
 import type { CardState } from '@loopy/core';
 
 const STATE_DIR = '.loopy/state';
@@ -32,32 +31,9 @@ function colorizeState(state: string): string {
 
 export const statusCommand = new Command('status')
   .description('Show current loop status')
-  .action(() => {
-    const stateDir = resolve(STATE_DIR);
-
-    if (!fs.existsSync(stateDir)) {
-      console.log(chalk.yellow('No active tasks. Run `loopy run` to start.'));
-      return;
-    }
-
-    const files = fs.readdirSync(stateDir).filter((f) => f.endsWith('.json'));
-
-    if (files.length === 0) {
-      console.log(chalk.yellow('No active tasks. Run `loopy run` to start.'));
-      return;
-    }
-
-    const cards: CardState[] = [];
-
-    for (const file of files) {
-      const filePath = resolve(stateDir, file);
-      try {
-        const data = JSON.parse(fs.readFileSync(filePath, 'utf-8')) as CardState;
-        cards.push(data);
-      } catch {
-        console.error(chalk.yellow(`Warning: Failed to parse ${file}`));
-      }
-    }
+  .action(async () => {
+    const store = new StateStore(STATE_DIR);
+    const cards: CardState[] = await store.loadAll();
 
     if (cards.length === 0) {
       console.log(chalk.yellow('No active tasks. Run `loopy run` to start.'));

@@ -66,6 +66,15 @@
       "agent": "Sisyphus-Junior",
       "category": "unspecified-high",
       "updated_at": "2026-06-11T17:59:02.158Z"
+    },
+    "todo:11": {
+      "task_key": "todo:11",
+      "task_label": "11",
+      "task_title": "Wire everything: pino logging, .loopy/ dir, state persistence",
+      "session_id": "ses_148267e01ffeSwX3EDN096184r",
+      "agent": "Sisyphus-Junior",
+      "category": "unspecified-high",
+      "updated_at": "2026-06-11T18:32:27.378Z"
     }
   }
 }

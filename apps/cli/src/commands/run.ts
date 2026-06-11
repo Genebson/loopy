@@ -10,6 +10,8 @@ import { LoopEngine, WorktreeManagerImpl, VerifierRunnerImpl, loopyConfigSchema,
 import type { LoopyConfig } from '@loopy/core';
 import { GHProjectClient } from '@loopy/gh';
 import { OpenCodeHTTPClient } from '@loopy/opencode';
+import { createLogger } from '../lib/logger.js';
+import { ensureLoopyDirs } from '../lib/setup.js';
 
 const PID_FILE = '.loopy/loopy.pid';
 
@@ -80,6 +82,9 @@ export const runCommand = new Command('run')
   .option('--verbose', 'Enable debug logging')
   .action(async (options: { spawn?: boolean; configPath: string; once?: boolean; verbose?: boolean }) => {
     console.log(chalk.cyan('loopy v0.1.0 — Loop Engineering, locally'));
+
+    ensureLoopyDirs();
+    createLogger({ verbose: options.verbose, logDir: '.loopy/logs' });
 
     checkExistingProcess();
     writePidFile();

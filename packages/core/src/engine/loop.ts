@@ -1,6 +1,4 @@
 import { execSync } from 'node:child_process';
-import fs from 'node:fs';
-import path from 'node:path';
 import type { GHClient } from '../interfaces/gh-client.js';
 import type { OpenCodeClient } from '../interfaces/opencode-client.js';
 import type { WorktreeManager } from '../interfaces/worktree-manager.js';
@@ -9,17 +7,7 @@ import type { LoopyConfig } from '../config/schema.js';
 import type { GitHubCard } from '../types/card.js';
 import { logger } from '../logger.js';
 import { transition, type LoopState, type LoopEvent } from './state-machine.js';
-
-interface CardState {
-  issueNumber: number;
-  state: LoopState;
-  retriesLeft: number;
-  branch: string;
-  worktreePath: string;
-  startedAt: string;
-  completedAt: string | null;
-  error: string | null;
-}
+import { StateStore } from '../state/store.js';
 
 export class LoopEngine {
   private readonly ghClient: GHClient;
@@ -27,7 +15,7 @@ export class LoopEngine {
   private readonly worktreeManager: WorktreeManager;
   private readonly verifierRunner: VerifierRunner;
   private readonly config: LoopyConfig;
-  private readonly stateDir: string;
+  private readonly stateStore: StateStore;
   private readonly projectId: string;
   private readonly readyColumnOptionId: string;
 
@@ -44,7 +32,7 @@ export class LoopEngine {
     this.worktreeManager = worktreeManager;
     this.verifierRunner = verifierRunner;
     this.config = config;
-    this.stateDir = stateDir ?? '.loopy/state';
+    this.stateStore = new StateStore(stateDir ?? '.loopy/state');
 
     if ('id' in config.project) {
       this.projectId = config.project.id;
@@ -56,7 +44,7 @@ export class LoopEngine {
   }
 
   async run(signal: AbortSignal): Promise<void> {
-    await this.ensureStateDir();
+    await this.stateStore.ensureDir();
 
     if ('owner' in this.config.project) {
       const project = await this.ghClient.getProject({
@@ -83,7 +71,11 @@ export class LoopEngine {
       await this.worktreeManager.recover();
 
       const cards = await this.ghClient.listReadyCards(this.projectId, this.readyColumnOptionId);
-      const filteredCards = this.filterSkippedCards(cards);
+      const allStates = await this.stateStore.loadAll();
+      const skippedIssueNumbers = new Set(
+        allStates.filter((s) => s.state === 'Done' || s.state === 'Blocked').map((s) => s.issueNumber),
+      );
+      const filteredCards = cards.filter((c) => !skippedIssueNumbers.has(c.issueNumber));
 
       if (filteredCards.length === 0) {
         logger.info('No ready cards, polling...');
@@ -194,7 +186,7 @@ export class LoopEngine {
 
             if (state === 'Blocked') {
               await this.handleBlocked(card, columns.blockedColumnId, 'Verifier failed after max retries', worktreePath);
-              this.saveCardState({
+              await this.stateStore.save({
                 issueNumber: card.issueNumber,
                 state: 'Blocked',
                 retriesLeft: 0,
@@ -209,7 +201,7 @@ export class LoopEngine {
           }
         } else {
           await this.handleBlocked(card, columns.blockedColumnId, 'Verifier failed with no retries left', worktreePath);
-          this.saveCardState({
+          await this.stateStore.save({
             issueNumber: card.issueNumber,
             state: 'Blocked',
             retriesLeft: 0,
@@ -230,7 +222,7 @@ export class LoopEngine {
       if (!hasChanges) {
         await this.ghClient.addComment(card.contentId, '🤖 loopy detected no changes after implementation');
         state = 'Done';
-        this.saveCardState({
+        await this.stateStore.save({
           issueNumber: card.issueNumber,
           state: 'Done',
           retriesLeft,
@@ -261,7 +253,7 @@ export class LoopEngine {
         await this.worktreeManager.remove(worktreePath);
       }
 
-      this.saveCardState({
+      await this.stateStore.save({
         issueNumber: card.issueNumber,
         state: 'Done',
         retriesLeft,
@@ -277,7 +269,7 @@ export class LoopEngine {
 
       state = transition(state, { type: 'ERROR', message });
       await this.handleBlocked(card, columns.blockedColumnId, message, worktreePath);
-      this.saveCardState({
+      await this.stateStore.save({
         issueNumber: card.issueNumber,
         state: 'Blocked',
         retriesLeft,
@@ -343,38 +335,6 @@ export class LoopEngine {
     }
   }
 
-  private filterSkippedCards(cards: GitHubCard[]): GitHubCard[] {
-    return cards.filter((card) => {
-      const stateFile = path.join(this.stateDir, `${card.issueNumber}.json`);
-      if (!fs.existsSync(stateFile)) return true;
-
-      try {
-        const data = JSON.parse(fs.readFileSync(stateFile, 'utf-8')) as CardState;
-        return data.state !== 'Done' && data.state !== 'Blocked';
-      } catch {
-        return true;
-      }
-    });
-  }
-
-  private saveCardState(cardState: CardState): void {
-    const stateFile = path.join(this.stateDir, `${cardState.issueNumber}.json`);
-    try {
-      fs.writeFileSync(stateFile, JSON.stringify(cardState, null, 2));
-      logger.info({ card: cardState.issueNumber, state: cardState.state }, 'Card state saved');
-    } catch (err) {
-      logger.error({ err: String(err) }, 'Failed to save card state');
-    }
-  }
-
-  private async ensureStateDir(): Promise<void> {
-    try {
-      await fs.promises.mkdir(this.stateDir, { recursive: true });
-    } catch {
-      logger.warn('Failed to create state directory');
-    }
-  }
-
   private sleep(ms: number, signal: AbortSignal): Promise<void> {
     return new Promise((resolve) => {
       const timer = setTimeout(resolve, ms);
@@ -397,5 +357,3 @@ export class LoopEngine {
     (this as unknown as Record<string, string>)[key] = value;
   }
 }
-
-export type { CardState };

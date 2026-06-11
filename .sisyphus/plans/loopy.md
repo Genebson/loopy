@@ -1260,7 +1260,7 @@ Max Concurrent: 3 (Waves 1, 2, 3)
   - Files: `apps/cli/src/commands/run.ts`, `apps/cli/src/commands/status.ts`, `apps/cli/src/commands/stop.ts`
   - Pre-commit: `pnpm typecheck && pnpm lint`
 
-- [ ] 11. Wire everything: pino logging, .loopy/ dir, state persistence
+- [x] 11. Wire everything: pino logging, .loopy/ dir, state persistence
 
   **What to do**:
   - Set up pino logger in `apps/cli/src/lib/logger.ts`:
