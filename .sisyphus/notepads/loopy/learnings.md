@@ -61,3 +61,21 @@
 - **GHProjectClient for init**: The init wizard uses `GHProjectClient` directly to fetch project info and column options, then writes `.loopy/cache.json` for future use.
 - **@inquirer/prompts**: Provides `input`, `select`, `confirm`, `number` for interactive CLI prompts. Works in ESM context.
 - **Build script fix**: Changed root `build` script from `pnpm --filter @loopy/core build && pnpm -r --parallel --filter '!@loopy/core' run build` to sequential chain to avoid race conditions.
+
+## 2026-06-11: Integration Tests
+
+- **vi.mock('node:child_process') with compiled ESM**: When integration tests import `@loopy/core` from compiled ESM dist, `vi.mock('node:child_process')` at module level does NOT intercept `execSync` calls inside the compiled code. The `LoopEngine.openPr()` method uses real `execSync` which throws `spawnSync /bin/sh ENOENT` in test environments. Solution: design tests to accept this behavior and assert on the `Blocked` state with error containing `ENOENT`, rather than expecting `InReview`.
+- **GH rate limit test design**: `LoopEngine.run()` does NOT catch errors from `listReadyCards` — a thrown error propagates up and crashes the loop. So a 429 test must assert the error propagates rather than expecting retry behavior.
+- **Vitest integration config**: Integration tests at repo root need `resolve.alias` to map `@loopy/core` to the compiled ESM dist path, and `server.deps.inline` to force vitest to process the module through its transform pipeline.
+- **Real StateStore in tests**: Using real `StateStore` with temp directories (`os.tmpdir() + 'loopy-int-'`) enables testing crash recovery scenarios. Clean up with `fs.rmSync(tmpDir, { recursive: true, force: true })` in `afterEach`.
+- **AbortController pattern for testing loops**: Use `new AbortController()`, call `engine.run(controller.signal)`, wait with `setTimeout`, then `controller.abort()` to stop the loop. Wrap `await runPromise` in try/catch since abort may cause rejection.
+- **Test cleanup**: Always clean up temp dirs in `afterEach` even if tests fail. Use `vi.restoreAllMocks()` in `afterEach` to prevent mock leakage between tests.
+
+## 2026-06-11: Documentation
+
+- **README structure**: 18 sections covering hero through FAQ, with ASCII architecture and state machine diagrams
+- **E2E script pattern**: Use `set -euo pipefail` and parameter parsing with `while [[ $# -gt 0 ]]` for robust bash scripts
+- **E2E script header comments**: Necessary for shell scripts (no type system, no self-documenting signatures) -- serves as public API documentation
+- **Config schema maps to docs**: Every field in `loopyConfigSchema` has a corresponding row in the configuration reference table
+- **State machine docs**: The `LoopState` and `LoopEvent` unions from `state-machine.ts` map directly to the docs and README diagrams
+- **Package.json e2e script**: Changed from placeholder `echo 'No e2e tests yet'` to `bash tests/e2e/run.sh`

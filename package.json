@@ -12,7 +12,7 @@
     "lint:fix": "oxlint --fix .",
     "typecheck": "tsc --noEmit",
     "clean": "rm -rf node_modules && pnpm -r run clean",
-    "e2e": "echo 'No e2e tests yet'"
+    "e2e": "bash tests/e2e/run.sh"
   },
   "devDependencies": {
     "@types/node": "^22.15.3",

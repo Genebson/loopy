@@ -1449,7 +1449,7 @@ Max Concurrent: 3 (Waves 1, 2, 3)
   - Files: `packages/**/src/**/*.test.ts`, `apps/cli/src/**/*.test.ts`
   - Pre-commit: `pnpm typecheck && pnpm test`
 
-- [ ] 13. Integration tests (full loop cycle with mocks, recovery scenarios)
+- [x] 13. Integration tests (full loop cycle with mocks, recovery scenarios)
 
   **What to do**:
   - Add integration tests in `tests/integration/` (workspace-level, not in any single package)
@@ -1533,7 +1533,7 @@ Max Concurrent: 3 (Waves 1, 2, 3)
   - Files: `tests/integration/**`
   - Pre-commit: `pnpm typecheck && pnpm test:integration`
 
-- [ ] 14. E2E script + README + architecture diagram
+- [x] 14. E2E script + README + architecture diagram
 
   **What to do**:
   - Add E2E script at `tests/e2e/run.sh` (or `tests/e2e/run.ts`):
