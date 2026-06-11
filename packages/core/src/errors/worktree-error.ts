@@ -1,8 +1,14 @@
 import { LoopyError } from './base.js';
 
+export type WorktreeErrorCode =
+  | 'ALREADY_EXISTS'
+  | 'INVALID_PATH'
+  | 'GIT_ERROR'
+  | 'NOT_FOUND';
+
 export class WorktreeError extends LoopyError {
-  constructor(userMessage: string, cause?: Error) {
-    super('WORKTREE_ERROR', userMessage, cause);
+  constructor(code: WorktreeErrorCode, userMessage: string, cause?: Error) {
+    super(code, userMessage, cause);
     this.name = 'WorktreeError';
   }
 }

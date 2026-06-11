@@ -20,6 +20,8 @@
     "test": "vitest run"
   },
   "dependencies": {
+    "pino": "^10.3.1",
+    "simple-git": "^3.36.0",
     "zod": "^3.25.0"
   },
   "devDependencies": {

@@ -4,3 +4,5 @@ export { loopyConfigSchema, defineConfig } from './config/schema.js';
 export type { LoopyConfig } from './config/schema.js';
 export { LoopyError, ConfigError, GHAPIError, OpenCodeError, WorktreeError, VerifierError, TimeoutError } from './errors/index.js';
 export type { OpenCodeErrorCode } from './errors/index.js';
+export type { WorktreeErrorCode } from './errors/index.js';
+export { WorktreeManagerImpl } from './worktree/manager.js';

@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { LoopyError, ConfigError, GHAPIError, OpenCodeError, WorktreeError, VerifierError, TimeoutError } from './index.js';
+import type { WorktreeErrorCode } from './worktree-error.js';
 
 describe('LoopyError hierarchy', () => {
   it('LoopyError has code and userMessage', () => {
@@ -52,10 +53,20 @@ describe('LoopyError hierarchy', () => {
     expect(err.code).toBe('OPENCODE_ERROR');
   });
 
-  it('WorktreeError extends LoopyError', () => {
-    const err = new WorktreeError('wt failed');
-    expect(err.code).toBe('WORKTREE_ERROR');
+  it('WorktreeError extends LoopyError with code', () => {
+    const err = new WorktreeError('ALREADY_EXISTS', 'worktree exists');
+    expect(err.code).toBe('ALREADY_EXISTS');
+    expect(err.userMessage).toBe('worktree exists');
     expect(err).toBeInstanceOf(LoopyError);
+    expect(err).toBeInstanceOf(WorktreeError);
+  });
+
+  it('WorktreeError accepts all error codes', () => {
+    const codes: WorktreeErrorCode[] = ['ALREADY_EXISTS', 'INVALID_PATH', 'GIT_ERROR', 'NOT_FOUND'];
+    for (const code of codes) {
+      const err = new WorktreeError(code, `test ${code}`);
+      expect(err.code).toBe(code);
+    }
   });
 
   it('VerifierError extends LoopyError', () => {
