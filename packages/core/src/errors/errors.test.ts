@@ -40,10 +40,16 @@ describe('LoopyError hierarchy', () => {
     expect(err).toBeInstanceOf(LoopyError);
   });
 
-  it('OpenCodeError extends LoopyError', () => {
-    const err = new OpenCodeError('opencode failed');
-    expect(err.code).toBe('OPENCODE_ERROR');
+  it('OpenCodeError extends LoopyError with code', () => {
+    const err = new OpenCodeError('CONNECTION_REFUSED', 'opencode failed');
+    expect(err.code).toBe('CONNECTION_REFUSED');
+    expect(err.userMessage).toBe('opencode failed');
     expect(err).toBeInstanceOf(LoopyError);
+  });
+
+  it('OpenCodeError defaults to OPENCODE_ERROR code', () => {
+    const err = new OpenCodeError('OPENCODE_ERROR', 'generic error');
+    expect(err.code).toBe('OPENCODE_ERROR');
   });
 
   it('WorktreeError extends LoopyError', () => {

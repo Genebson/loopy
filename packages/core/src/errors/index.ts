@@ -2,6 +2,7 @@ export { LoopyError } from './base.js';
 export { ConfigError } from './config-error.js';
 export { GHAPIError } from './gh-api-error.js';
 export { OpenCodeError } from './opencode-error.js';
+export type { OpenCodeErrorCode } from './opencode-error.js';
 export { WorktreeError } from './worktree-error.js';
 export { VerifierError } from './verifier-error.js';
 export { TimeoutError } from './timeout-error.js';

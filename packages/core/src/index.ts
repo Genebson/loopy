@@ -3,3 +3,4 @@ export type { GHClient, OpenCodeClient, WorktreeManager, VerifierRunner } from '
 export { loopyConfigSchema, defineConfig } from './config/schema.js';
 export type { LoopyConfig } from './config/schema.js';
 export { LoopyError, ConfigError, GHAPIError, OpenCodeError, WorktreeError, VerifierError, TimeoutError } from './errors/index.js';
+export type { OpenCodeErrorCode } from './errors/index.js';

@@ -1,1 +1,1 @@
-export {};
+export { OpenCodeHTTPClient } from './client.js';

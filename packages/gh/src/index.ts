@@ -1,1 +1,1 @@
-export {};
+export { GHProjectClient } from './client.js';

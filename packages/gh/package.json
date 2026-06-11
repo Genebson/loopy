@@ -20,10 +20,12 @@
     "test": "vitest run"
   },
   "dependencies": {
-    "@loopy/core": "workspace:*"
+    "@loopy/core": "workspace:*",
+    "@octokit/graphql": "^9.0.3"
   },
   "devDependencies": {
     "@types/node": "^22.15.3",
+    "nock": "^14.0.15",
     "typescript": "^5.9.3",
     "vitest": "^3.2.1"
   }
