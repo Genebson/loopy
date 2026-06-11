@@ -41,3 +41,23 @@
 - **LoopEngine state machine**: Pure function `transition(state, event) → newState` with exhaustive switches. The `processCard` method tracks state locally and persists to `.loopy/state/{issueNumber}.json` after each significant transition.
 - **Card state persistence format**: `CardState` includes `issueNumber`, `state` (LoopState), `retriesLeft`, `branch`, `worktreePath`, timestamps, and `error`. Cards in `Done` or `Blocked` state are skipped on subsequent loops.
 - **pollPermissions stopped callback**: The `stopped()` callback must return `boolean`, not `void`. Use `() => permissionPollingStopped` instead of `() => { permissionPollingStopped = true; }`.
+
+## 2026-06-11: CLI Commands (run, status, stop)
+
+- **jiti for TypeScript config loading**: Use `jiti` (just-in-time TS/ESM loader) to dynamically import `loopy.config.ts` files at runtime. `createJiti(import.meta.url, { interopDefault: true })` + `jiti.import(absolutePath)` handles TS compilation transparently. The `interopDefault: true` option ensures `export default` works correctly.
+- **Config loading pattern**: Load config with `await jiti.import(path)` then extract default: `(configModule as Record<string, unknown>).default ?? configModule`. Validate with `loopyConfigSchema.parse(raw)`.
+- **PID file for process management**: Write `process.pid` to `.loopy/loopy.pid` on start, check for existing process with `process.kill(pid, 0)` (returns true if running, throws if not). Remove PID file in `finally` block.
+- **Signal handling for graceful shutdown**: Use `AbortController` pattern. Register `SIGINT`/`SIGTERM` handlers that call `controller.abort()`. The `LoopEngine.run()` accepts the `AbortSignal` and checks `signal.aborted` in its loop.
+- **chalk for CLI output**: Use `chalk.red()` for errors, `chalk.green()` for success, `chalk.yellow()` for warnings, `chalk.cyan()` for banners. Avoid `console.log` in library code but OK in CLI commands for user-facing output.
+- **Relative time formatting**: Format ISO timestamps as relative times ("2h ago", "1d ago") for the status table display.
+- **Sequential build required**: `pnpm build` from root uses `--parallel` for non-core packages, which causes `@loopy/cli` to start building before `@loopy/gh`/`@loopy/opencode` finish. Must build sequentially or build dependencies first.
+
+## 2026-06-11: CLI Init Command Implementation
+
+- **chalk v4 for CJS compat**: Use `chalk@4` (not v5) since v5 is ESM-only and breaks dual CJS+ESM builds.
+- **import.meta.url in dual builds**: `import.meta.url` fails in CJS builds. Use `pathToFileURL(resolve('.'))` from `node:url` as a CJS-compatible alternative for jiti's baseURL parameter.
+- **Parallel build race condition**: `pnpm -r --parallel` causes CLI CJS build to fail when workspace dependencies haven't built yet. Fix: build dependencies sequentially (core → gh → opencode → test-utils → cli).
+- **Existing command files**: `run.ts`, `status.ts`, `stop.ts` already existed with pre-built Commander commands. The `index.ts` needed to import and register all four commands.
+- **GHProjectClient for init**: The init wizard uses `GHProjectClient` directly to fetch project info and column options, then writes `.loopy/cache.json` for future use.
+- **@inquirer/prompts**: Provides `input`, `select`, `confirm`, `number` for interactive CLI prompts. Works in ESM context.
+- **Build script fix**: Changed root `build` script from `pnpm --filter @loopy/core build && pnpm -r --parallel --filter '!@loopy/core' run build` to sequential chain to avoid race conditions.

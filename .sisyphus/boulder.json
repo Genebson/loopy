@@ -6,14 +6,18 @@
     "ses_14856548dffe9hq9BCJqWp045g",
     "ses_14855e756ffeKS4aC0AV4T6Gbm",
     "ses_1483e51f0ffedUTscij0VSVwDB",
-    "ses_1483ddc22ffeRaY3LZXdwtf1tu"
+    "ses_1483ddc22ffeRaY3LZXdwtf1tu",
+    "ses_14830718dffeI1hysANDxpxqqh",
+    "ses_1482fe978ffep95sHU1b82bHX5"
   ],
   "session_origins": {
     "ses_14a095814ffewiVti56dZYpQbc": "direct",
     "ses_14856548dffe9hq9BCJqWp045g": "appended",
     "ses_14855e756ffeKS4aC0AV4T6Gbm": "appended",
     "ses_1483e51f0ffedUTscij0VSVwDB": "appended",
-    "ses_1483ddc22ffeRaY3LZXdwtf1tu": "appended"
+    "ses_1483ddc22ffeRaY3LZXdwtf1tu": "appended",
+    "ses_14830718dffeI1hysANDxpxqqh": "appended",
+    "ses_1482fe978ffep95sHU1b82bHX5": "appended"
   },
   "plan_name": "loopy",
   "agent": "atlas",
@@ -53,6 +57,15 @@
       "agent": "Sisyphus-Junior",
       "category": "unspecified-high",
       "updated_at": "2026-06-11T17:48:33.212Z"
+    },
+    "todo:9": {
+      "task_key": "todo:9",
+      "task_label": "9",
+      "task_title": "@loopy/cli — Commander setup, init command (wizard)",
+      "session_id": "ses_1482fe978ffep95sHU1b82bHX5",
+      "agent": "Sisyphus-Junior",
+      "category": "unspecified-high",
+      "updated_at": "2026-06-11T17:59:02.158Z"
     }
   }
 }

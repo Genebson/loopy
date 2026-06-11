@@ -5,7 +5,7 @@
   "description": "Loopy — local CLI loop runner",
   "scripts": {
     "dev": "pnpm -r --parallel run dev",
-    "build": "pnpm --filter @loopy/core build && pnpm -r --parallel --filter '!@loopy/core' run build",
+    "build": "pnpm --filter @loopy/core build && pnpm --filter @loopy/gh build && pnpm --filter @loopy/opencode build && pnpm --filter @loopy/test-utils build && pnpm --filter @loopy/cli build",
     "test": "vitest run",
     "test:integration": "vitest run --config vitest.integration.config.ts",
     "lint": "oxlint .",

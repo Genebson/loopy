@@ -1049,7 +1049,7 @@ Max Concurrent: 3 (Waves 1, 2, 3)
 
 ### Wave 4 — CLI + integration (parallel)
 
-- [ ] 9. @loopy/cli — Commander setup, init command (wizard)
+- [x] 9. @loopy/cli — Commander setup, init command (wizard)
 
   **What to do**:
   - Set up Commander in `apps/cli/src/index.ts` as the main entry point
@@ -1153,7 +1153,7 @@ Max Concurrent: 3 (Waves 1, 2, 3)
   - Files: `apps/cli/src/**`
   - Pre-commit: `pnpm typecheck && pnpm lint && pnpm build`
 
-- [ ] 10. @loopy/cli — run, status, stop commands + signal handling
+- [x] 10. @loopy/cli — run, status, stop commands + signal handling
 
   **What to do**:
   - Implement `loopy run` in `apps/cli/src/commands/run.ts`:
