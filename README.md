@@ -239,6 +239,29 @@ loopy stop
 
 Sends SIGTERM to the PID recorded in `.loopy/loopy.pid`. Waits up to 10 seconds for the process to exit.
 
+### `loopy doctor`
+
+Diagnose loopy setup and dependencies.
+
+```bash
+loopy doctor
+loopy doctor --config-path ./my-config.ts
+```
+
+Checks: gh CLI installed, gh authenticated, git installed, loopy.config.ts exists, config valid, .loopy/ writable, opencode reachable. Prints a checklist with green checkmarks for passing checks and red crosses for failures.
+
+### `loopy logs`
+
+View loopy event logs.
+
+```bash
+loopy logs
+loopy logs --lines 100
+loopy logs --follow
+```
+
+Displays the last N lines from `.loopy/logs/events.log` with pretty formatting (colored log levels, timestamps). Use `--follow` to stream new entries in real time (Ctrl+C to stop).
+
 ## `loopy init` wizard walkthrough
 
 1. **Git check** -- loopy verifies you are inside a git repository. If not, it exits.
@@ -441,8 +464,6 @@ If a card is in the Ready column but has a state file in `.loopy/state/` with st
 - **Smart ordering** -- priority field and dependency graph
 - **Cost tracking** -- token usage and estimated cost per card
 - **/goal analog** -- configurable prompt templates and context injection
-- **`loopy doctor`** -- check prerequisites and config validity
-- **`loopy logs`** -- structured log viewer
 - **Parallel processing** -- `concurrency > 1` support
 
 ## Development

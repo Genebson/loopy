@@ -65,7 +65,7 @@ async function runWizard(yes: boolean): Promise<InitAnswers> {
     : Number(await number({ message: 'Project number?', min: 1 }));
 
   if (!projectNumber || projectNumber < 1) {
-    console.error(chalk.red('Error: Project number must be a positive integer.'));
+    console.error(chalk.red('Error: Project number must be a positive integer. Enter a number like 1, 2, or 42.'));
     process.exit(1);
   }
 
@@ -76,7 +76,7 @@ async function runWizard(yes: boolean): Promise<InitAnswers> {
     project = await client.getProject({ owner, number: projectNumber });
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
-    console.error(chalk.red(`Error fetching project: ${message}`));
+    console.error(chalk.red(`Error fetching project: ${message}. Check your owner and project number, and verify gh auth status.`));
     process.exit(1);
   }
 
@@ -87,14 +87,14 @@ async function runWizard(yes: boolean): Promise<InitAnswers> {
     columns = await client.getFieldOptions(project.id, 'Status');
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
-    console.error(chalk.red(`Error fetching columns: ${message}`));
+    console.error(chalk.red(`Error fetching columns: ${message}. Verify your project has a Status field with columns.`));
     process.exit(1);
   }
 
   const columnNames = columns.map((c) => c.name);
 
   if (columnNames.length === 0) {
-    console.error(chalk.red('Error: No Status columns found in project.'));
+    console.error(chalk.red('Error: No Status columns found in project. Make sure your GitHub Project has a Status field with at least one column.'));
     process.exit(1);
   }
 
@@ -209,6 +209,13 @@ function writeCacheFile(cachePath: string, data: CacheData): void {
 export const initCommand = new Command('init')
   .description('Initialize loopy configuration with an interactive wizard')
   .option('-y, --yes', 'Use all defaults without prompting')
+  .addHelpText(
+    'after',
+    `
+Examples:
+  $ loopy init
+  $ loopy init --yes`,
+  )
   .action(async (options: { yes?: boolean }) => {
     const yes = options.yes ?? false;
 

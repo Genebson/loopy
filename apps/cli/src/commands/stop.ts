@@ -25,6 +25,12 @@ async function waitForExit(pid: number, timeoutMs: number): Promise<boolean> {
 
 export const stopCommand = new Command('stop')
   .description('Stop a running loopy process')
+  .addHelpText(
+    'after',
+    `
+Examples:
+  $ loopy stop`,
+  )
   .action(async () => {
     const pidPath = resolve(PID_FILE);
 

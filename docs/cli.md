@@ -1,6 +1,6 @@
 # CLI Reference
 
-loopy provides four commands: `init`, `run`, `status`, and `stop`.
+loopy provides six commands: `init`, `run`, `status`, `stop`, `doctor`, and `logs`.
 
 ## `loopy init`
 
@@ -145,9 +145,62 @@ loopy stop
 
 - `0` -- success (including when no process is found)
 
-## Upcoming commands (v0.2)
+## `loopy doctor`
 
-These commands are on the roadmap but not yet implemented:
+Diagnose loopy setup and dependencies.
 
-- `loopy doctor` -- check prerequisites and config validity
-- `loopy logs` -- view structured log output
+```bash
+loopy doctor
+loopy doctor --config-path ./my-config.ts
+```
+
+### What it checks
+
+1. `gh` CLI installed
+2. `gh` authenticated
+3. `git` installed
+4. `loopy.config.ts` exists
+5. Config valid (parses and validates with Zod schema)
+6. `.loopy/` directory writable
+7. opencode server reachable (only if config exists)
+
+### Output
+
+A checklist with green checkmarks for passing checks and red crosses for failures. Each failure includes an actionable fix message.
+
+### Exit codes
+
+- `0` -- all checks passed
+- `1` -- one or more checks failed
+
+## `loopy logs`
+
+View loopy event logs.
+
+```bash
+loopy logs
+loopy logs --lines 100
+loopy logs --follow
+```
+
+### Flags
+
+| Flag | Type | Default | Description |
+|---|---|---|---|
+| `--follow` | boolean | false | Follow new log entries as they are written (like `tail -f`) |
+| `--lines <n>` | number | 50 | Number of lines to show from the end of the log |
+
+### What it displays
+
+Each log line is parsed as JSON (pino format) and pretty-printed with:
+- Timestamp (localized)
+- Log level (DEBUG, INFO, WARN, ERROR, FATAL) in color
+- Message
+- Extra fields as key=value pairs
+
+Use `--follow` to stream new entries in real time. Press Ctrl+C to stop.
+
+### Exit codes
+
+- `0` -- success
+- `1` -- no log file found

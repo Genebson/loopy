@@ -79,3 +79,12 @@
 - **Config schema maps to docs**: Every field in `loopyConfigSchema` has a corresponding row in the configuration reference table
 - **State machine docs**: The `LoopState` and `LoopEvent` unions from `state-machine.ts` map directly to the docs and README diagrams
 - **Package.json e2e script**: Changed from placeholder `echo 'No e2e tests yet'` to `bash tests/e2e/run.sh`
+
+## 2026-06-11: CLI Polish (doctor, logs, help text, error messages)
+
+- **Commander `.addHelpText('after', ...)`**: Adds example invocations after the options list. Format with newline + "Examples:" header for readability.
+- **`loopy doctor`**: Uses `execSync` with `stdio: 'pipe'` to check gh, gh auth, git. Uses `jiti` + `loopyConfigSchema` to validate config. Uses `fetch` with `AbortSignal.timeout(3000)` for opencode reachability check. Creates `.loopy/` dir if missing before write test.
+- **`loopy logs`**: Reads `.loopy/logs/events.log`, parses pino JSON lines, colorizes by level. `--follow` mode uses `setInterval(1000)` with file size polling (`fs.statSync` + `fs.readSync` with offset) rather than `fs.watch` for simplicity.
+- **Error message pattern**: Every error should state WHAT went wrong and HOW TO FIX it. E.g., "loopy.config.ts not found at X. Run `loopy init`" instead of "not found". Generic errors suggest `loopy doctor`.
+- **`--version` on program**: Already existed on the root `program` via `.version('0.1.0')`. Individual Commander subcommands don't need separate version flags since `loopy --version` works at the root level.
+- **Empty catch blocks**: Project convention is `catch { void 0; }` rather than comments, since the AGENTS.md says "NO COMMENTS".

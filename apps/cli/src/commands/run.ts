@@ -80,6 +80,14 @@ export const runCommand = new Command('run')
   .option('--config-path <path>', 'Path to loopy.config.ts', 'loopy.config.ts')
   .option('--once', 'Run a single iteration and exit')
   .option('--verbose', 'Enable debug logging')
+  .addHelpText(
+    'after',
+    `
+Examples:
+  $ loopy run
+  $ loopy run --once --verbose
+  $ loopy run --spawn`,
+  )
   .action(async (options: { spawn?: boolean; configPath: string; once?: boolean; verbose?: boolean }) => {
     console.log(chalk.cyan('loopy v0.1.0 — Loop Engineering, locally'));
 
@@ -150,9 +158,9 @@ export const runCommand = new Command('run')
       if (err instanceof ConfigError) {
         console.error(chalk.red(`Error: ${err.userMessage}`));
       } else if (err instanceof Error) {
-        console.error(chalk.red(`Error: ${err.message}`));
+        console.error(chalk.red(`Error: ${err.message}. Run \`loopy doctor\` to diagnose setup issues.`));
       } else {
-        console.error(chalk.red('An unexpected error occurred'));
+        console.error(chalk.red('An unexpected error occurred. Run `loopy doctor` to check your setup.'));
       }
       process.exitCode = 1;
     } finally {

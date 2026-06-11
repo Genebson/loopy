@@ -1655,7 +1655,7 @@ Max Concurrent: 3 (Waves 1, 2, 3)
   - Files: `README.md`, `CHANGELOG.md`, `LICENSE`, `tests/e2e/**`
   - Pre-commit: `pnpm typecheck`
 
-- [ ] 15. Final polish — error messages, --help, --version, examples
+- [x] 15. Final polish — error messages, --help, --version, examples
 
   **What to do**:
   - Review every error path and ensure user-facing message is friendly and actionable

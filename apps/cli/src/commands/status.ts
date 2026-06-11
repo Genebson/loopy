@@ -31,6 +31,12 @@ function colorizeState(state: string): string {
 
 export const statusCommand = new Command('status')
   .description('Show current loop status')
+  .addHelpText(
+    'after',
+    `
+Examples:
+  $ loopy status`,
+  )
   .action(async () => {
     const store = new StateStore(STATE_DIR);
     const cards: CardState[] = await store.loadAll();
