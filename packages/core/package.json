@@ -19,11 +19,12 @@
     "lint": "oxlint src/",
     "test": "vitest run"
   },
-  "dependencies": {},
+  "dependencies": {
+    "zod": "^3.25.0"
+  },
   "devDependencies": {
     "@types/node": "^22.15.3",
     "typescript": "^5.9.3",
-    "vitest": "^3.2.1",
-    "zod": "^3.25.0"
+    "vitest": "^3.2.1"
   }
 }
