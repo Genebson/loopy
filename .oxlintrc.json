@@ -1,0 +1,29 @@
+{
+  "$schema": "./node_modules/oxlint/configuration_schema.json",
+  "plugins": [
+    "typescript",
+    "import",
+    "promise",
+    "unicorn"
+  ],
+  "env": {
+    "node": true,
+    "es2024": true
+  },
+  "rules": {
+    "eqeqeq": "warn",
+    "no-unused-vars": "warn",
+    "no-console": "off",
+    "prefer-const": "warn",
+    "no-var": "error",
+    "@typescript-eslint/no-explicit-any": "warn",
+    "@typescript-eslint/no-unused-vars": "warn",
+    "unicorn/prefer-module": "off"
+  },
+  "ignorePatterns": [
+    "node_modules",
+    "dist",
+    "*.config.js",
+    "*.config.ts"
+  ]
+}

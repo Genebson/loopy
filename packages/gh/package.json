@@ -1,0 +1,30 @@
+{
+  "name": "@loopy/gh",
+  "version": "0.1.0",
+  "private": true,
+  "main": "./dist/cjs/index.js",
+  "module": "./dist/esm/index.js",
+  "types": "./dist/cjs/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/cjs/index.d.ts",
+      "import": "./dist/esm/index.js",
+      "require": "./dist/cjs/index.js"
+    }
+  },
+  "scripts": {
+    "build": "rm -rf dist && tsc -p tsconfig.json --outDir ./dist/cjs && tsc -p tsconfig.esm.json && node ../../scripts/add-js-extensions.mjs",
+    "dev": "tsc -p tsconfig.esm.json --watch",
+    "clean": "rm -rf dist",
+    "lint": "oxlint src/",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@loopy/core": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/node": "^22.15.3",
+    "typescript": "^5.9.3",
+    "vitest": "^3.2.1"
+  }
+}

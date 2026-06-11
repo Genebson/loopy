@@ -1,0 +1,6 @@
+node_modules
+dist
+.loopy
+*.log
+.env
+.DS_Store
