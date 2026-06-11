@@ -179,9 +179,10 @@ describe('LoopEngine', () => {
       const { execSync } = await import('node:child_process');
       vi.mocked(execSync).mockReturnValue('https://github.com/org/repo/pull/1\n');
 
-      vi.spyOn(fs, 'existsSync').mockReturnValue(false);
       vi.spyOn(fs.promises, 'mkdir').mockResolvedValue(undefined);
-      vi.spyOn(fs, 'writeFileSync').mockImplementation(() => {});
+      vi.spyOn(fs.promises, 'readdir').mockResolvedValue([]);
+      vi.spyOn(fs.promises, 'writeFile').mockResolvedValue(undefined);
+      vi.spyOn(fs.promises, 'rename').mockResolvedValue(undefined);
 
       const controller = new AbortController();
       const runPromise = engine.run(controller.signal);
@@ -231,9 +232,10 @@ describe('LoopEngine', () => {
         .mockResolvedValueOnce({ passed: false, exitCode: 1, stdout: '', stderr: 'fail', durationMs: 100 })
         .mockResolvedValueOnce({ passed: true, exitCode: 0, stdout: '', stderr: '', durationMs: 100 });
 
-      vi.spyOn(fs, 'existsSync').mockReturnValue(false);
       vi.spyOn(fs.promises, 'mkdir').mockResolvedValue(undefined);
-      vi.spyOn(fs, 'writeFileSync').mockImplementation(() => {});
+      vi.spyOn(fs.promises, 'readdir').mockResolvedValue([]);
+      vi.spyOn(fs.promises, 'writeFile').mockResolvedValue(undefined);
+      vi.spyOn(fs.promises, 'rename').mockResolvedValue(undefined);
 
       const { execSync } = await import('node:child_process');
       vi.mocked(execSync).mockReturnValue('https://github.com/org/repo/pull/2\n');
@@ -277,9 +279,10 @@ describe('LoopEngine', () => {
         passed: false, exitCode: 1, stdout: '', stderr: 'fail', durationMs: 100,
       });
 
-      vi.spyOn(fs, 'existsSync').mockReturnValue(false);
       vi.spyOn(fs.promises, 'mkdir').mockResolvedValue(undefined);
-      vi.spyOn(fs, 'writeFileSync').mockImplementation(() => {});
+      vi.spyOn(fs.promises, 'readdir').mockResolvedValue([]);
+      vi.spyOn(fs.promises, 'writeFile').mockResolvedValue(undefined);
+      vi.spyOn(fs.promises, 'rename').mockResolvedValue(undefined);
 
       const controller = new AbortController();
       const runPromise = engine.run(controller.signal);
@@ -309,9 +312,10 @@ describe('LoopEngine', () => {
       vi.mocked(worktreeManager.create)
         .mockRejectedValueOnce(new Error('worktree creation failed'));
 
-      vi.spyOn(fs, 'existsSync').mockReturnValue(false);
       vi.spyOn(fs.promises, 'mkdir').mockResolvedValue(undefined);
-      vi.spyOn(fs, 'writeFileSync').mockImplementation(() => {});
+      vi.spyOn(fs.promises, 'readdir').mockResolvedValue([]);
+      vi.spyOn(fs.promises, 'writeFile').mockResolvedValue(undefined);
+      vi.spyOn(fs.promises, 'rename').mockResolvedValue(undefined);
 
       const controller = new AbortController();
       const runPromise = engine.run(controller.signal);
@@ -348,18 +352,17 @@ describe('LoopEngine', () => {
 
       vi.mocked(ghClient.listReadyCards).mockResolvedValueOnce([doneCard, freshCard]).mockResolvedValue([]);
 
-      vi.spyOn(fs, 'existsSync').mockImplementation((filePath: unknown) => {
-        if (typeof filePath === 'string' && filePath.includes('5.json')) return true;
-        return false;
-      });
-      vi.spyOn(fs, 'readFileSync').mockImplementation((filePath: unknown) => {
+      const doneState = { issueNumber: 5, state: 'Done', retriesLeft: 0, branch: '', worktreePath: '', startedAt: '', completedAt: '', error: null };
+      vi.spyOn(fs.promises, 'readdir').mockResolvedValue(['5.json'] as unknown as Awaited<ReturnType<typeof fs.promises.readdir>>);
+      vi.spyOn(fs.promises, 'readFile').mockImplementation(async (filePath: unknown) => {
         if (typeof filePath === 'string' && filePath.includes('5.json')) {
-          return JSON.stringify({ issueNumber: 5, state: 'Done', retriesLeft: 0, branch: '', worktreePath: '', startedAt: '', completedAt: '', error: null });
+          return JSON.stringify(doneState);
         }
-        return '{}';
+        throw new Error('File not found');
       });
       vi.spyOn(fs.promises, 'mkdir').mockResolvedValue(undefined);
-      vi.spyOn(fs, 'writeFileSync').mockImplementation(() => {});
+      vi.spyOn(fs.promises, 'writeFile').mockResolvedValue(undefined);
+      vi.spyOn(fs.promises, 'rename').mockResolvedValue(undefined);
 
       vi.mocked(worktreeManager.create).mockResolvedValue({
         path: '/tmp/wt/6-fresh',
@@ -414,9 +417,10 @@ describe('LoopEngine', () => {
       });
       vi.mocked(worktreeManager.hasChanges).mockResolvedValue(false);
 
-      vi.spyOn(fs, 'existsSync').mockReturnValue(false);
       vi.spyOn(fs.promises, 'mkdir').mockResolvedValue(undefined);
-      vi.spyOn(fs, 'writeFileSync').mockImplementation(() => {});
+      vi.spyOn(fs.promises, 'readdir').mockResolvedValue([]);
+      vi.spyOn(fs.promises, 'writeFile').mockResolvedValue(undefined);
+      vi.spyOn(fs.promises, 'rename').mockResolvedValue(undefined);
 
       const controller = new AbortController();
       const runPromise = engine.run(controller.signal);

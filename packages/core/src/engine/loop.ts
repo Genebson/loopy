@@ -8,6 +8,7 @@ import type { GitHubCard } from '../types/card.js';
 import { logger } from '../logger.js';
 import { transition, type LoopState, type LoopEvent } from './state-machine.js';
 import { StateStore } from '../state/store.js';
+import type { VerifierResult } from '../types/verifier.js';
 
 export class LoopEngine {
   private readonly ghClient: GHClient;
@@ -111,6 +112,7 @@ export class LoopEngine {
     let retriesLeft = this.config.retries;
     let branch = '';
     let worktreePath = '';
+    let lastVerifierResult: VerifierResult | null = null;
 
     state = transition(state, { type: 'CARD_PICKED' });
     logger.info({ card: card.issueNumber, state }, 'Card picked');
@@ -155,6 +157,7 @@ export class LoopEngine {
         this.config.verifier.env ?? {},
         this.config.verifier.timeout,
       );
+      lastVerifierResult = verifierResult;
 
       if (!verifierResult.passed) {
         retriesLeft--;
@@ -177,6 +180,7 @@ export class LoopEngine {
             if (retryResult.passed) {
               state = transition(state, { type: 'VERIFIER_PASSED' });
               logger.info({ card: card.issueNumber, state }, 'Verifier passed on retry');
+              lastVerifierResult = retryResult;
               break;
             }
 
@@ -242,7 +246,7 @@ export class LoopEngine {
       state = transition(state, { type: 'PR_OPENED' });
       logger.info({ card: card.issueNumber, state }, 'PR opened');
 
-      const prUrl = this.openPr(worktreePath, branch, card);
+      const prUrl = this.openPr(worktreePath, branch, card, lastVerifierResult);
       await this.ghClient.moveCard(card.id, columns.inReviewColumnId);
       await this.ghClient.addComment(card.contentId, `🤖 PR opened: ${prUrl}`);
 
@@ -319,9 +323,26 @@ export class LoopEngine {
     }
   }
 
-  private openPr(worktreePath: string, branch: string, card: GitHubCard): string {
+  private openPr(worktreePath: string, branch: string, card: GitHubCard, verifierResult: VerifierResult | null): string {
     const title = `loopy: #${card.issueNumber} - ${card.title}`;
-    const body = `Implements #${card.issueNumber}\n\n${card.url}`;
+
+    const MAX_OUTPUT_EXCERPT = 2000;
+    const stdoutExcerpt = verifierResult?.stdout
+      ? verifierResult.stdout.slice(-MAX_OUTPUT_EXCERPT)
+      : 'No output';
+    const verifierSection = `## Verifier
+
+\`\`\`
+${this.config.verifier.command}
+\`\`\`
+
+## Test output (last ${MAX_OUTPUT_EXCERPT} chars)
+
+\`\`\`
+${stdoutExcerpt}
+\`\`\``;
+
+    const body = `Implements #${card.issueNumber}\n\n${card.url}\n\n${verifierSection}`.slice(0, 65000);
 
     try {
       const result = execSync(

@@ -21,3 +21,16 @@
 - Init: Interactive wizard (discovers GH Project + column IDs)
 - Smart ordering: Not in MVP (column order only)
 - Documentation: Comprehensive README + docs/ directory (5 files), no JSDoc requirement
+## F1 Fix: PR body content enrichment (2026-06-11)
+
+**Decision**: Enrich PR body to include verifier command and test output excerpt, as required by the plan.
+
+**Implementation**:
+- Added `VerifierResult` import to `loop.ts`
+- Added `lastVerifierResult` tracking variable in `processCard()` — tracks the most recent verifier result through both first-run and retry paths
+- Modified `openPr()` signature to accept `verifierResult: VerifierResult | null`
+- PR body now includes: issue link, verifier command in a code block, and last 2000 chars of stdout as "Test output"
+- Body is truncated to 65000 chars (GitHub's limit is 65536, with 500 chars margin for metadata)
+- `lastVerifierResult` is set after first verifier run and updated after each retry that passes
+
+**Rationale**: The plan explicitly required "PR opened with body containing: issue link, verifier command, test output excerpt". The previous implementation only had `Implements #N\n\nURL`.
