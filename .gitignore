@@ -1,6 +1,7 @@
 node_modules
 dist
 .loopy
+.sisyphus
 *.log
 .env
 .DS_Store
