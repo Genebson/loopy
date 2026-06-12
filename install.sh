@@ -6,21 +6,21 @@
 # untested. Windows is not supported (use WSL or Git Bash).
 #
 # Usage:
-#   curl -fsSL https://raw.githubusercontent.com/<owner>/loopy/main/install.sh | bash
+#   curl -fsSL https://raw.githubusercontent.com/Genebson/loopy/main/install.sh | bash
 #   # Or clone and run locally:
 #   bash install.sh
 #
 # Environment variables:
 #   LOOPY_HOME  — installation directory (default: ~/.loopy/installation)
 #   LOOPY_BIN   — binary symlink path   (default: ~/.local/bin/loopy)
-#   LOOPY_REPO  — git remote URL        (default: https://github.com/<owner>/loopy.git)
+#   LOOPY_REPO  — git remote URL        (default: https://github.com/Genebson/loopy.git)
 #   LOOPY_REF   — git ref to install    (default: main)
 #
 set -euo pipefail
 
 LOOPY_HOME="${LOOPY_HOME:-$HOME/.loopy/installation}"
 LOOPY_BIN="${LOOPY_BIN:-$HOME/.local/bin/loopy}"
-LOOPY_REPO="${LOOPY_REPO:-https://github.com/<owner>/loopy.git}"
+LOOPY_REPO="${LOOPY_REPO:-https://github.com/Genebson/loopy.git}"
 LOOPY_REF="${LOOPY_REF:-main}"
 
 RED='\033[0;31m'

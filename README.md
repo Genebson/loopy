@@ -108,7 +108,7 @@ The state machine is a pure function: `transition(state, event) → newState`. E
 ### Quick install (recommended)
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/<owner>/loopy/main/install.sh | bash
+curl -fsSL https://raw.githubusercontent.com/Genebson/loopy/main/install.sh | bash
 ```
 
 This installs `loopy` to `~/.local/bin/loopy`. Make sure `~/.local/bin` is in your PATH:
@@ -146,7 +146,7 @@ bash ~/.loopy/installation/uninstall.sh
 
 - `LOOPY_HOME` — installation directory (default: `~/.loopy/installation`)
 - `LOOPY_BIN` — binary location (default: `~/.local/bin/loopy`)
-- `LOOPY_REPO` — git URL (default: `https://github.com/<owner>/loopy.git`)
+- `LOOPY_REPO` — git URL (default: `https://github.com/Genebson/loopy.git`)
 - `LOOPY_REF` — git ref to install (default: `main`)
 
 ### Requirements
