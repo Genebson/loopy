@@ -1,5 +1,18 @@
 # Troubleshooting
 
+## Wrong platform (Linux/Windows)
+
+v0.1.0 only fully supports **macOS**.
+
+If you are on Linux:
+- The `install.sh` script should work, but is untested beyond CI unit tests
+- The app code uses POSIX-compliant APIs but has not been manually tested on any Linux distro
+
+If you are on Windows:
+- `install.sh` will not run natively. Use WSL (Windows Subsystem for Linux) or Git Bash
+- The app has known issues: simple-git Windows path handling, pino-pretty color codes, gh CLI command quoting
+- v0.2 will add proper cross-platform support
+
 ## `gh` not authenticated
 
 **Symptom:** `Error: gh CLI not authenticated. Run 'gh auth login' first.`

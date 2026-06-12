@@ -96,3 +96,10 @@
 - **Git SHA vs branch**: `git clone --branch` only works for branches and tags, not commit SHAs. When `LOOPY_REF` is a 40-char hex string, fall back to `git clone` + `git checkout`.
 - **Non-interactive uninstall**: When run via `curl | bash`, stdin is not a TTY. The uninstaller must check `[ -t 0 ]` before prompting, and default to "yes" in non-interactive mode.
 - **PATH detection**: The install script detects the user's shell via `$SHELL` and suggests the appropriate RC file (`.zshrc`, `.bash_profile`, `.bashrc`, `.config/fish/config.fish`).
+
+## 2026-06-12: Platform Support Documentation
+
+- **Honest platform matrix**: v0.1.0 only fully supports macOS. Linux is untested beyond CI unit tests. Windows has multiple known issues (simple-git paths, pino-pretty, gh CLI quoting).
+- **install.sh is bash-only**: Won't work on Windows natively. Even on macOS, the script must be run from bash/zsh, not sh.
+- **Linux untested**: The code uses POSIX APIs and `path.resolve()` which is cross-platform, but hasn't been manually tested on any Linux distro.
+- **Decision for v0.2**: Add proper cross-platform support with CI matrix testing on macOS + Linux + Windows.

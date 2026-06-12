@@ -151,6 +151,7 @@ bash ~/.loopy/installation/uninstall.sh
 
 ### Requirements
 
+- **Platform**: macOS only (v0.1.0). Linux may work but is untested. Windows is not supported.
 - **Node.js** >= 25.0.0
 - **pnpm** >= 10.0.0
 - **git** (in PATH)
@@ -480,6 +481,7 @@ If a card is in the Ready column but has a state file in `.loopy/state/` with st
 
 ## Limitations
 
+- **macOS only** -- v0.1.0 only fully supports macOS. Linux may work but is untested. Windows is not supported. The install script is bash-only, and the app has known Windows compatibility issues (simple-git paths, pino-pretty colors, gh CLI quoting). Use WSL or Git Bash if you must run on Windows.
 - **No smart ordering** -- Cards are processed in API order, not by priority or dependency.
 - **No cross-repo** -- loopy works on one repo at a time, the one it is running in.
 - **No daemon mode** -- The MVP runs in the foreground. Use `nohup` or `tmux` for background execution.
@@ -559,9 +561,9 @@ That is what the verifier is for. If `pnpm test` or your custom verifier fails, 
 
 loopy is free and open source. The cost comes from whatever API the agent (opencode) uses. loopy does not track token usage in v0.1.0.
 
-### Does it work with Windows?
+### Which platforms are supported?
 
-loopy uses `execSync` and `child_process.spawn` for git and `gh` commands, and git worktrees for isolation. It should work on Windows with WSL or Git Bash, but it has only been tested on macOS and Linux.
+v0.1.0 only fully supports **macOS**. The install script is bash-only and will not run on Windows natively. The app has known issues on Windows (simple-git path handling, pino-pretty color codes, gh CLI command quoting). Linux may work but has not been tested beyond CI unit tests. v0.2 will add proper cross-platform support with CI matrix testing on macOS, Linux, and Windows.
 
 ### Can I use a different agent (not opencode)?
 

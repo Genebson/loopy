@@ -2,6 +2,9 @@
 #
 # install.sh — Install loopy CLI from source
 #
+# PLATFORM: v0.1.0 only fully supports macOS. Linux may work but is
+# untested. Windows is not supported (use WSL or Git Bash).
+#
 # Usage:
 #   curl -fsSL https://raw.githubusercontent.com/<owner>/loopy/main/install.sh | bash
 #   # Or clone and run locally:

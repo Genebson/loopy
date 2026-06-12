@@ -1,5 +1,7 @@
 # Security
 
+> **Platform support**: v0.1.0 only fully supports macOS. Linux may work but is untested. Windows is not supported.
+
 loopy runs on your local machine and interacts with GitHub and an opencode agent. Understanding what it can and cannot do is important for safe operation.
 
 ## What loopy can do
