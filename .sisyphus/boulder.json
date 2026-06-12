@@ -11,7 +11,9 @@
     "ses_1482fe978ffep95sHU1b82bHX5",
     "ses_147944613ffe1lA6LdA466ICNp",
     "ses_147936d7cffe1DIiNImRPJ2vlN",
-    "ses_14783c9c4ffe8lSyBRJcnEeHNh"
+    "ses_14783c9c4ffe8lSyBRJcnEeHNh",
+    "ses_1477b4372ffe1UqVHuSWTAS0AD",
+    "ses_1477adf83ffe6rxRQsYt6ShP4A"
   ],
   "session_origins": {
     "ses_14a095814ffewiVti56dZYpQbc": "direct",
@@ -23,7 +25,9 @@
     "ses_1482fe978ffep95sHU1b82bHX5": "appended",
     "ses_147944613ffe1lA6LdA466ICNp": "appended",
     "ses_147936d7cffe1DIiNImRPJ2vlN": "appended",
-    "ses_14783c9c4ffe8lSyBRJcnEeHNh": "appended"
+    "ses_14783c9c4ffe8lSyBRJcnEeHNh": "appended",
+    "ses_1477b4372ffe1UqVHuSWTAS0AD": "appended",
+    "ses_1477adf83ffe6rxRQsYt6ShP4A": "appended"
   },
   "plan_name": "loopy",
   "agent": "atlas",
@@ -86,9 +90,9 @@
       "task_key": "todo:12",
       "task_label": "12",
       "task_title": "Unit tests (state machine, config, clients, worktree, verifier)",
-      "session_id": "ses_14783c9c4ffe8lSyBRJcnEeHNh",
-      "agent": "oracle",
-      "updated_at": "2026-06-11T21:03:41.658Z"
+      "session_id": "ses_1477adf83ffe6rxRQsYt6ShP4A",
+      "agent": "build",
+      "updated_at": "2026-06-11T21:16:09.730Z"
     }
   }
 }

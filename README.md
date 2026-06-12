@@ -105,13 +105,24 @@ The state machine is a pure function: `transition(state, event) → newState`. E
 
 ## Installation
 
-loopy is a local CLI built from source. Requirements:
+### Quick install (recommended)
 
-- **Node.js** >= 25.0.0
-- **pnpm** >= 10.0.0
-- **git** (in PATH)
-- **gh** CLI, authenticated (`gh auth login`)
-- **opencode** v2, running (`opencode serve`)
+```bash
+curl -fsSL https://raw.githubusercontent.com/<owner>/loopy/main/install.sh | bash
+```
+
+This installs `loopy` to `~/.local/bin/loopy`. Make sure `~/.local/bin` is in your PATH:
+
+```bash
+export PATH="$HOME/.local/bin:$PATH"
+```
+
+Verify:
+```bash
+loopy --version
+```
+
+### From source
 
 ```bash
 git clone <your-repo-url> && cd loopy
@@ -119,11 +130,32 @@ pnpm install
 pnpm build
 ```
 
-After building, the CLI is at `apps/cli/dist/cjs/index.js`. You can alias it:
+The CLI is at `apps/cli/dist/esm/index.js`. You can alias it:
 
 ```bash
-alias loopy="node $(pwd)/apps/cli/dist/cjs/index.js"
+alias loopy="node $(pwd)/apps/cli/dist/esm/index.js"
 ```
+
+### Uninstallation
+
+```bash
+bash ~/.loopy/installation/uninstall.sh
+```
+
+### Environment variables (for the installer)
+
+- `LOOPY_HOME` — installation directory (default: `~/.loopy/installation`)
+- `LOOPY_BIN` — binary location (default: `~/.local/bin/loopy`)
+- `LOOPY_REPO` — git URL (default: `https://github.com/<owner>/loopy.git`)
+- `LOOPY_REF` — git ref to install (default: `main`)
+
+### Requirements
+
+- **Node.js** >= 25.0.0
+- **pnpm** >= 10.0.0
+- **git** (in PATH)
+- **gh** CLI, authenticated (`gh auth login`) — required for `loopy run`
+- **opencode** v2, running (`opencode serve`) — required for `loopy run`
 
 ## Configuration reference
 

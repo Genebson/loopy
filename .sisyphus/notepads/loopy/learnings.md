@@ -88,3 +88,11 @@
 - **Error message pattern**: Every error should state WHAT went wrong and HOW TO FIX it. E.g., "loopy.config.ts not found at X. Run `loopy init`" instead of "not found". Generic errors suggest `loopy doctor`.
 - **`--version` on program**: Already existed on the root `program` via `.version('0.1.0')`. Individual Commander subcommands don't need separate version flags since `loopy --version` works at the root level.
 - **Empty catch blocks**: Project convention is `catch { void 0; }` rather than comments, since the AGENTS.md says "NO COMMENTS".
+
+## 2026-06-11: Install Script
+
+- **ESM bin target**: The `bin` field in `apps/cli/package.json` points to `dist/esm/index.js`. The wrapper script in `install.sh` must target the ESM build, not CJS, to match the published bin convention.
+- **Node 25+ requirement**: Per `engines.node` in root package.json, the installer must verify Node >= 25 before proceeding. The `node -v | sed 's/v//' | cut -d. -f1` pattern is portable across macOS and Linux.
+- **Git SHA vs branch**: `git clone --branch` only works for branches and tags, not commit SHAs. When `LOOPY_REF` is a 40-char hex string, fall back to `git clone` + `git checkout`.
+- **Non-interactive uninstall**: When run via `curl | bash`, stdin is not a TTY. The uninstaller must check `[ -t 0 ]` before prompting, and default to "yes" in non-interactive mode.
+- **PATH detection**: The install script detects the user's shell via `$SHELL` and suggests the appropriate RC file (`.zshrc`, `.bash_profile`, `.bashrc`, `.config/fish/config.fish`).
