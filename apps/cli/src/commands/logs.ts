@@ -7,8 +7,16 @@ interface LogEntry {
   level?: number;
   time?: number;
   msg?: string;
+  card?: number;
   [key: string]: unknown;
 }
+
+const LOG_LEVELS: Record<string, number> = {
+  debug: 20,
+  info: 30,
+  warn: 40,
+  error: 50,
+};
 
 function formatLevel(level: number | undefined): string {
   if (level === undefined) return chalk.gray('UNKNOWN');
@@ -41,19 +49,75 @@ function formatLine(line: string): string {
   }
 }
 
+function filterEntries(
+  entries: LogEntry[],
+  opts: {
+    level?: string;
+    card?: number;
+    since?: number;
+    search?: string;
+  },
+): LogEntry[] {
+  return entries.filter((entry) => {
+    if (opts.level !== undefined) {
+      const targetLevel = LOG_LEVELS[opts.level];
+      if (entry.level !== targetLevel) return false;
+    }
+
+    if (opts.card !== undefined) {
+      if (entry.card !== opts.card) return false;
+    }
+
+    if (opts.since !== undefined) {
+      if (!entry.time || entry.time < opts.since) return false;
+    }
+
+    if (opts.search !== undefined) {
+      const msg = entry.msg ?? '';
+      if (!msg.toLowerCase().includes(opts.search.toLowerCase())) return false;
+    }
+
+    return true;
+  });
+}
+
 export const logsCommand = new Command('logs')
   .description('View loopy event logs')
   .option('--follow', 'Follow new log entries as they are written')
   .option('--lines <n>', 'Number of lines to show (default 50)', '50')
+  .option('--level <info|warn|debug|error>', 'Filter by log level')
+  .option('--card <number>', 'Filter by card issue number', (n) => Number.parseInt(n, 10))
+  .option('--since <timestamp>', 'Filter entries after timestamp (ISO 8601 or Unix ms)', (s) => {
+    const parsed = Date.parse(s);
+    if (Number.isNaN(parsed)) {
+      throw new Error(`Invalid timestamp: ${s}. Use ISO 8601 or Unix milliseconds.`);
+    }
+    return parsed;
+  })
+  .option('--search <query>', 'Search for text in log messages')
+  .option('--json', 'Output raw JSON for piping to jq')
   .addHelpText(
     'after',
     `
 Examples:
   $ loopy logs
   $ loopy logs --lines 100
-  $ loopy logs --follow`,
+  $ loopy logs --follow
+  $ loopy logs --level error
+  $ loopy logs --card 42
+  $ loopy logs --since "2024-01-01T00:00:00Z"
+  $ loopy logs --search "verification failed"
+  $ loopy logs --json | jq '.level == 50'`,
   )
-  .action((options: { follow?: boolean; lines?: string }) => {
+  .action(async (options: {
+    follow?: boolean;
+    lines?: string;
+    level?: string;
+    card?: number;
+    since?: number;
+    search?: string;
+    json?: boolean;
+  }) => {
     const logFile = resolve('.loopy/logs/events.log');
     const lines = Number.parseInt(options.lines ?? '50', 10);
 
@@ -67,14 +131,32 @@ Examples:
     }
 
     const content = fs.readFileSync(logFile, 'utf-8');
-    const allLines = content
-      .trim()
-      .split('\n')
-      .filter(Boolean);
-    const tail = allLines.slice(-lines);
+    const allLines = content.trim().split('\n').filter(Boolean);
 
-    for (const line of tail) {
-      console.log(formatLine(line));
+    const entries: LogEntry[] = [];
+    for (const line of allLines) {
+      try {
+        entries.push(JSON.parse(line));
+      } catch {
+        void 0;
+      }
+    }
+
+    const filtered = filterEntries(entries, {
+      level: options.level,
+      card: options.card,
+      since: options.since,
+      search: options.search,
+    });
+
+    const tail = filtered.slice(-lines);
+
+    for (const entry of tail) {
+      if (options.json) {
+        console.log(JSON.stringify(entry));
+      } else {
+        console.log(formatLine(JSON.stringify(entry)));
+      }
     }
 
     if (options.follow) {
@@ -89,11 +171,28 @@ Examples:
             fs.readSync(fd, buffer, 0, buffer.length, lastSize);
             fs.closeSync(fd);
             const newContent = buffer.toString('utf-8');
-            for (const newLine of newContent
-              .trim()
-              .split('\n')
-              .filter(Boolean)) {
-              console.log(formatLine(newLine));
+            for (const line of newContent.trim().split('\n').filter(Boolean)) {
+              let entry: LogEntry;
+              try {
+                entry = JSON.parse(line);
+              } catch {
+                continue;
+              }
+
+              const matches = filterEntries([entry], {
+                level: options.level,
+                card: options.card,
+                since: options.since,
+                search: options.search,
+              });
+
+              if (matches.length > 0) {
+                if (options.json) {
+                  console.log(JSON.stringify(entry));
+                } else {
+                  console.log(formatLine(line));
+                }
+              }
             }
             lastSize = currentSize;
           }
