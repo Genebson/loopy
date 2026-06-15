@@ -249,7 +249,7 @@ Examples:
 
     writeCacheFile(cachePath, {
       projectId: project.id,
-      statusFieldId: columns[0]?.id ?? '',
+      statusFieldId: client.statusFieldIdValue,
       fieldOptions: { Status: columns },
       updatedAt: new Date().toISOString(),
     });

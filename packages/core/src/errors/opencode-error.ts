@@ -4,6 +4,7 @@ export type OpenCodeErrorCode =
   | 'CONNECTION_REFUSED'
   | 'SESSION_TIMEOUT'
   | 'SESSION_NOT_FOUND'
+  | 'SESSION_ERROR'
   | 'PERMISSION_DENIED'
   | 'SERVER_ERROR'
   | 'UNKNOWN'
