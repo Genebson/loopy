@@ -91,8 +91,14 @@ describe('GHProjectClient', () => {
   });
 
   describe('getProject', () => {
-    it('succeeds with org project', async () => {
+    it('succeeds with org project (user query fails, org succeeds)', async () => {
       const client = new GHProjectClient();
+      // First: user query returns null
+      nock(GH_API)
+        .post('/graphql')
+        .matchHeader('authorization', 'token test-token-123')
+        .reply(200, { data: { user: { projectV2: null } } });
+      // Second: org query succeeds
       const scope = nock(GH_API)
         .post('/graphql')
         .matchHeader('authorization', 'token test-token-123')
@@ -103,7 +109,7 @@ describe('GHProjectClient', () => {
       scope.done();
     });
 
-    it('falls back to user project when org is null', async () => {
+    it('succeeds with user project on first query', async () => {
       const client = new GHProjectClient();
       const scope = nock(GH_API)
         .post('/graphql')
@@ -114,16 +120,14 @@ describe('GHProjectClient', () => {
       scope.done();
     });
 
-    it('throws GHAPIError when project not found', async () => {
+    it('throws GHAPIError when neither user nor org project found', async () => {
       const client = new GHProjectClient();
       nock(GH_API)
         .post('/graphql')
-        .reply(200, {
-          data: {
-            organization: { projectV2: null },
-            user: { projectV2: null },
-          },
-        });
+        .reply(200, { data: { user: { projectV2: null } } });
+      nock(GH_API)
+        .post('/graphql')
+        .reply(200, { data: { organization: { projectV2: null } } });
 
       await expect(client.getProject({ owner: 'nonexistent', number: 999 })).rejects.toThrow(GHAPIError);
     });
@@ -132,6 +136,8 @@ describe('GHProjectClient', () => {
   describe('getFieldOptions', () => {
     it('returns mapped columns from field options', async () => {
       const client = new GHProjectClient();
+      // getProject: user first (fails), org succeeds
+      nock(GH_API).post('/graphql').reply(200, { data: { user: { projectV2: null } } });
       nock(GH_API).post('/graphql').reply(200, { data: ORG_PROJECT_RESPONSE });
       await client.getProject({ owner: 'myorg', number: 1 });
 
@@ -150,6 +156,7 @@ describe('GHProjectClient', () => {
 
     it('throws GHAPIError when field not found', async () => {
       const client = new GHProjectClient();
+      nock(GH_API).post('/graphql').reply(200, { data: { user: { projectV2: null } } });
       nock(GH_API).post('/graphql').reply(200, { data: ORG_PROJECT_RESPONSE });
       await client.getProject({ owner: 'myorg', number: 1 });
 
@@ -168,6 +175,7 @@ describe('GHProjectClient', () => {
   describe('listReadyCards', () => {
     it('returns parsed cards from mocked response', async () => {
       const client = new GHProjectClient();
+      nock(GH_API).post('/graphql').reply(200, { data: { user: { projectV2: null } } });
       nock(GH_API).post('/graphql').reply(200, { data: ORG_PROJECT_RESPONSE });
       await client.getProject({ owner: 'myorg', number: 1 });
 
@@ -223,6 +231,7 @@ describe('GHProjectClient', () => {
   describe('moveCard', () => {
     it('issues correct GraphQL mutation', async () => {
       const client = new GHProjectClient();
+      nock(GH_API).post('/graphql').reply(200, { data: { user: { projectV2: null } } });
       nock(GH_API).post('/graphql').reply(200, { data: ORG_PROJECT_RESPONSE });
       await client.getProject({ owner: 'myorg', number: 1 });
 
@@ -251,33 +260,12 @@ describe('GHProjectClient', () => {
   describe('addComment', () => {
     it('adds comment to issue', async () => {
       const client = new GHProjectClient();
+      nock(GH_API).post('/graphql').reply(200, { data: { user: { projectV2: null } } });
       nock(GH_API).post('/graphql').reply(200, { data: ORG_PROJECT_RESPONSE });
       await client.getProject({ owner: 'myorg', number: 1 });
 
       nock(GH_API).post('/graphql').reply(200, { data: FIELDS_RESPONSE });
       await client.getFieldOptions('PROJ_1', 'Status');
-
-      nock(GH_API)
-        .post('/graphql')
-        .reply(200, {
-          data: {
-            node: {
-              id: 'ITEM_1',
-              content: {
-                id: 'ISSUE_1',
-                number: 42,
-                title: 'Test',
-                body: '',
-                url: 'https://github.com/myorg/repo/issues/42',
-                assignees: { nodes: [] },
-                labels: { nodes: [] },
-              },
-              fieldValues: {
-                nodes: [{ name: 'Todo', field: { name: 'Status' } }],
-              },
-            },
-          },
-        });
 
       const commentScope = nock(GH_API)
         .post('/graphql', (body) => {
@@ -287,7 +275,7 @@ describe('GHProjectClient', () => {
           data: { addComment: { commentEdge: { node: { id: 'COMMENT_1' } } } },
         });
 
-      await client.addComment('ITEM_1', 'Hello');
+      await client.addComment('ISSUE_1', 'Hello');
       commentScope.done();
     });
   });
@@ -302,6 +290,9 @@ describe('GHProjectClient', () => {
           errors: [{ type: 'RATE_LIMITED', message: 'rate limited' }],
         });
 
+      nock(GH_API)
+        .post('/graphql')
+        .reply(200, { data: { user: { projectV2: null } } });
       nock(GH_API)
         .post('/graphql')
         .reply(200, { data: ORG_PROJECT_RESPONSE });
