@@ -34,7 +34,7 @@ interface IssueContent {
 
 interface FieldValue {
   name: string;
-  field: { name: string };
+  field?: { name: string } | null;
 }
 
 interface ProjectItem {
@@ -53,7 +53,7 @@ interface CacheData {
 const COLUMN_ROLE_MAP: Record<string, ColumnRole> = {
   ready: 'ready',
   todo: 'ready',
-  backlog: 'ready',
+  backlog: 'blocked',
   'in progress': 'inProgress',
   in_progress: 'inProgress',
   'in review': 'inReview',
@@ -79,6 +79,10 @@ export class GHProjectClient implements GHClient {
   constructor(cachePath = '.loopy/cache.json') {
     this.cachePath = resolve(cachePath);
     this.token = GHProjectClient.readToken();
+  }
+
+  get statusFieldIdValue(): string {
+    return this.statusFieldId;
   }
 
   private static readToken(): string {
@@ -195,7 +199,7 @@ export class GHProjectClient implements GHClient {
     const content = item.content;
     if (!content) throw new GHAPIError('Card has no issue content');
 
-    const statusField = item.fieldValues.nodes.find((v) => v.field.name === 'Status');
+    const statusField = item.fieldValues.nodes.find((v) => v.field?.name === 'Status');
     const columnId = statusField ? this.getColumnIdByName(statusField.name) : '';
 
     return {
@@ -204,42 +208,51 @@ export class GHProjectClient implements GHClient {
       title: content.title,
       body: content.body ?? '',
       columnId,
-      assignees: content.assignees.nodes.map((n) => n.login),
-      labels: content.labels.nodes.map((n) => n.name),
+      assignees: content.assignees?.nodes.map((n) => n.login) ?? [],
+      labels: content.labels?.nodes.map((n) => n.name) ?? [],
       url: content.url,
       issueNumber: content.number,
     };
   }
 
   async getProject(params: { owner: string; number: number }): Promise<{ id: string; title: string }> {
-    const result = await this.graphqlQuery<{
-      organization: { projectV2: ProjectV2 | null } | null;
-      user: { projectV2: ProjectV2 | null } | null;
-    }>(
-      `query($owner: String!, $number: Int!) {
-        organization(login: $owner) {
-          projectV2(number: $number) { id title }
-        }
-        user(login: $owner) {
-          projectV2(number: $number) { id title }
-        }
-      }`,
-      { owner: params.owner, number: params.number },
-    );
+    let userProject: ProjectV2 | null = null;
+    let orgProject: ProjectV2 | null = null;
+    let orgError: unknown;
 
-    const orgProject = result.organization?.projectV2;
-    if (orgProject) {
-      this.projectId = orgProject.id;
-      return orgProject;
+    try {
+      const userResult = await this.graphqlQuery<{
+        user: { projectV2: ProjectV2 | null } | null;
+      }>(
+        `query($owner: String!, $number: Int!) { user(login: $owner) { projectV2(number: $number) { id title } } }`,
+        { owner: params.owner, number: params.number },
+      );
+      userProject = userResult.user?.projectV2 ?? null;
+    } catch {}
+
+    try {
+      const orgResult = await this.graphqlQuery<{
+        organization: { projectV2: ProjectV2 | null } | null;
+      }>(
+        `query($owner: String!, $number: Int!) { organization(login: $owner) { projectV2(number: $number) { id title } } }`,
+        { owner: params.owner, number: params.number },
+      );
+      orgProject = orgResult.organization?.projectV2 ?? null;
+    } catch (err) {
+      orgError = err;
     }
 
-    const userProject = result.user?.projectV2;
     if (userProject) {
       this.projectId = userProject.id;
       return userProject;
     }
 
-    throw new GHAPIError(`Project not found: ${params.owner}/${params.number}`);
+    if (orgProject) {
+      this.projectId = orgProject.id;
+      return orgProject;
+    }
+
+    throw new GHAPIError(`Project not found: ${params.owner}/${params.number}. Org error: ${orgError ? String(orgError) : 'none'}`);
   }
 
   async getFieldOptions(projectId: string, fieldName: string): Promise<Column[]> {
@@ -360,7 +373,7 @@ export class GHProjectClient implements GHClient {
       for (const item of items.nodes) {
         if (!item.content) continue;
 
-        const statusField: FieldValue | undefined = item.fieldValues.nodes.find((v: FieldValue) => v.field.name === 'Status');
+        const statusField: FieldValue | undefined = item.fieldValues.nodes.find((v: FieldValue) => v.field?.name === 'Status');
         if (!statusField) continue;
         if (statusField.name.toLowerCase() !== readyColumnName.toLowerCase()) continue;
 
@@ -434,17 +447,14 @@ export class GHProjectClient implements GHClient {
     );
   }
 
-  async addComment(cardId: string, body: string): Promise<void> {
-    const card = await this.getCard(cardId);
-    if (!card.contentId) throw new GHAPIError(`Card ${cardId} has no issue content`);
-
+  async addComment(issueId: string, body: string): Promise<void> {
     await this.graphqlQuery(
       `mutation($issueId: ID!, $body: String!) {
         addComment(input: { subjectId: $issueId, body: $body }) {
           commentEdge { node { id } }
         }
       }`,
-      { issueId: card.contentId, body },
+      { issueId, body },
     );
   }
 }
