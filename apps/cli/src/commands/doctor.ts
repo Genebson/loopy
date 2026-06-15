@@ -137,7 +137,7 @@ Examples:
             const raw =
               (configModule as Record<string, unknown>).default ?? configModule;
             const config = loopyConfigSchema.parse(raw);
-            const response = await fetch(`${config.opencode.url}/api/session`, {
+            const response = await fetch(`${config.opencode.url}/session/status`, {
               method: 'GET',
               signal: AbortSignal.timeout(3000),
             });
