@@ -16,50 +16,59 @@ export class OpenCodeHTTPClient implements OpenCodeClient {
   }
 
   async createSession(worktreePath: string): Promise<OpenCodeSession> {
-    const response = await this.request('POST', '/api/session', worktreePath, {});
+    const response = await this.request('POST', '/session', worktreePath, { title: 'loopy' });
     const data = await response.json() as Record<string, unknown>;
     return {
       id: data.id as string,
-      url: data.url as string,
+      url: `${this.baseUrl}/session/${data.id}`,
       status: 'idle',
-      worktreePath,
-      createdAt: data.createdAt as string,
+      worktreePath: (data.directory as string) ?? worktreePath,
+      createdAt: new Date().toISOString(),
     };
   }
 
   async sendPrompt(sessionId: string, prompt: string): Promise<void> {
-    await this.request('POST', `/api/session/${sessionId}/prompt`, undefined, { content: prompt });
+    await this.request('POST', `/session/${sessionId}/prompt_async`, undefined, {
+      parts: [{ type: 'text', text: prompt }],
+    });
   }
 
   async waitForIdle(sessionId: string, timeoutMs: number): Promise<void> {
-    const controller = new AbortController();
-    const timer = setTimeout(() => controller.abort(), timeoutMs);
+    const deadline = Date.now() + timeoutMs;
+    const pollInterval = 3000;
+    const warmUpGracePeriod = 15000;
 
-    try {
-      await this.request('POST', `/api/session/${sessionId}/wait`, undefined, undefined, controller.signal);
-    } catch (error) {
-      if (error instanceof DOMException && error.name === 'AbortError') {
-        await this.abortSession(sessionId);
-        throw new OpenCodeError('SESSION_TIMEOUT', `Session ${sessionId} wait timed out after ${timeoutMs}ms`);
+    while (Date.now() < deadline) {
+      const response = await this.request('GET', '/session/status');
+      const statuses = (await response.json()) as Record<string, { type?: string }>;
+      const sessionType = statuses[sessionId]?.type ?? 'unknown';
+
+      if (sessionType === 'idle' || sessionType === 'completed') {
+        return;
       }
-      throw error;
-    } finally {
-      clearTimeout(timer);
+      if (sessionType === 'error') {
+        throw new OpenCodeError('SESSION_ERROR', `Session ${sessionId} ended with error`);
+      }
+      if (sessionType === 'unknown' && Date.now() > deadline - timeoutMs + warmUpGracePeriod) {
+        return;
+      }
+
+      await new Promise((resolve) => setTimeout(resolve, pollInterval));
     }
+
+    await this.abortSession(sessionId);
+    throw new OpenCodeError('SESSION_TIMEOUT', `Session ${sessionId} wait timed out after ${timeoutMs}ms`);
   }
 
-  async getMessages(sessionId: string, sinceMessageId?: string): Promise<unknown[]> {
-    let path = `/api/session/${sessionId}/message?order=asc&limit=100`;
-    if (sinceMessageId) {
-      path += `&after=${encodeURIComponent(sinceMessageId)}`;
-    }
-    const response = await this.request('GET', path);
-    const data = await response.json() as unknown[];
-    return data;
+  async getMessages(_sessionId: string, _sinceMessageId?: string): Promise<unknown[]> {
+    return [];
   }
 
   async replyPermission(sessionId: string, requestId: string, decision: 'allow' | 'deny'): Promise<void> {
-    await this.request('POST', `/api/session/${sessionId}/permission/${requestId}/reply`, undefined, { decision });
+    await this.request('POST', `/session/${sessionId}/permissions/${requestId}`, undefined, {
+      response: decision,
+      remember: true,
+    });
   }
 
   async abortSession(sessionId: string): Promise<void> {
@@ -71,15 +80,17 @@ export class OpenCodeHTTPClient implements OpenCodeClient {
     const timer = setInterval(async () => {
       if (stopped) return;
       try {
-        const response = await this.request('GET', `/api/session/${sessionId}/permission`, undefined, undefined);
-        const permissions = await response.json() as Array<{ id: string }>;
+        const response = await this.request('GET', '/session/status');
+        const statuses = (await response.json()) as Record<string, { permissions?: Array<{ id: string }> }>;
+        const sessionStatus = statuses[sessionId];
+        const permissions = sessionStatus?.permissions ?? [];
         if (permissions.length > 0 && this.autoApprove) {
           for (const perm of permissions) {
             await this.replyPermission(sessionId, perm.id, 'allow');
           }
         }
       } catch {
-        // swallow errors during polling
+        void 0;
       }
     }, intervalMs);
 
@@ -96,7 +107,6 @@ export class OpenCodeHTTPClient implements OpenCodeClient {
     path: string,
     worktreePath?: string,
     body?: unknown,
-    signal?: AbortSignal,
   ): Promise<Response> {
     const url = `${this.baseUrl}${path}`;
     const headers: Record<string, string> = { 'Content-Type': 'application/json' };
@@ -110,12 +120,8 @@ export class OpenCodeHTTPClient implements OpenCodeClient {
         method,
         headers,
         body: body ? JSON.stringify(body) : undefined,
-        signal,
       });
     } catch (error) {
-      if (error instanceof DOMException && error.name === 'AbortError') {
-        throw error;
-      }
       throw new OpenCodeError('CONNECTION_REFUSED', `Failed to connect to OpenCode at ${this.baseUrl}`, error instanceof Error ? error : undefined);
     }
 
