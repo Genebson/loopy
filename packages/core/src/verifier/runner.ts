@@ -4,12 +4,16 @@ import type { VerifierResult } from '../types/verifier.js';
 import { VerifierError } from '../errors/verifier-error.js';
 import { logger } from '../logger.js';
 
-function parseCommand(command: string): [string, string[]] {
+function parseCommand(command: string): { shell: true; command: string } | { shell: false; binary: string; args: string[] } {
+  const hasShellOperators = /[&|;]/.test(command);
+  if (hasShellOperators) {
+    return { shell: true, command };
+  }
   const idx = command.indexOf(' ');
-  if (idx === -1) return [command, []];
+  if (idx === -1) return { shell: false, binary: command, args: [] };
   const binary = command.slice(0, idx);
   const argsStr = command.slice(idx + 1);
-  return [binary, argsStr.split(' ').filter(Boolean)];
+  return { shell: false, binary, args: argsStr.split(' ').filter(Boolean) };
 }
 
 const MAX_OUTPUT_BYTES = 1_048_576;
@@ -21,15 +25,29 @@ function truncateOutput(buffer: Buffer): string {
 
 export class VerifierRunnerImpl implements VerifierRunner {
   async run(command: string, cwd: string, env: Record<string, string>, timeoutMs: number): Promise<VerifierResult> {
-    const [binary, args] = parseCommand(command);
+    const parsed = parseCommand(command);
     const mergedEnv = { ...process.env, ...env } as Record<string, string>;
+
+    let binary: string;
+    let args: string[];
+    let spawnOpts: { cwd: string; env: Record<string, string>; shell?: boolean };
+
+    if (parsed.shell) {
+      binary = process.platform === 'win32' ? 'cmd.exe' : 'sh';
+      args = process.platform === 'win32' ? ['/c', parsed.command] : ['-c', parsed.command];
+      spawnOpts = { cwd, env: mergedEnv };
+    } else {
+      binary = parsed.binary;
+      args = parsed.args;
+      spawnOpts = { cwd, env: mergedEnv };
+    }
 
     logger.info({ command, cwd, timeoutMs }, 'verifier.run.start');
 
     const startTime = Date.now();
 
     return new Promise<VerifierResult>((resolve, reject) => {
-      const child = spawn(binary, args, { cwd, env: mergedEnv });
+      const child = spawn(binary, args, spawnOpts);
 
       let stdoutBuf = Buffer.alloc(0);
       let stderrBuf = Buffer.alloc(0);
