@@ -81,7 +81,7 @@ export const runCommand = new Command('run')
   .option('--once', 'Run a single iteration and exit')
   .option('--verbose', 'Enable debug logging')
   .option('--card <number>', 'Process a specific card by issue number', (val) => Number.parseInt(val, 10))
-  .option('--cards <numbers...>', 'Process specific cards by issue numbers', (vals) => vals.map((v: string) => Number.parseInt(v, 10)))
+  .option('--cards <numbers...>', 'Process specific cards by issue numbers', (value: string, previous: number[] = []) => [...previous, Number.parseInt(value, 10)])
   .addHelpText(
     'after',
     `
