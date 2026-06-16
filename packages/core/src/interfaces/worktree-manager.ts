@@ -9,4 +9,5 @@ export interface WorktreeManager {
   commit(path: string, message: string): Promise<void>;
   push(path: string): Promise<void>;
   getCurrentBranch(path: string): Promise<string>;
+  getNodeModulesBin(): string;
 }

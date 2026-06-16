@@ -1,4 +1,5 @@
 import { spawn } from 'node:child_process';
+import path from 'node:path';
 import type { VerifierRunner } from '../interfaces/verifier-runner.js';
 import type { VerifierResult } from '../types/verifier.js';
 import { VerifierError } from '../errors/verifier-error.js';
@@ -24,9 +25,14 @@ function truncateOutput(buffer: Buffer): string {
 }
 
 export class VerifierRunnerImpl implements VerifierRunner {
-  async run(command: string, cwd: string, env: Record<string, string>, timeoutMs: number): Promise<VerifierResult> {
+  async run(command: string, cwd: string, env: Record<string, string>, timeoutMs: number, extraPath?: string): Promise<VerifierResult> {
     const parsed = parseCommand(command);
     const mergedEnv = { ...process.env, ...env } as Record<string, string>;
+
+    if (extraPath) {
+      const currentPath = mergedEnv.PATH ?? process.env.PATH ?? '';
+      mergedEnv.PATH = `${extraPath}${path.delimiter}${currentPath}`;
+    }
 
     let binary: string;
     let args: string[];

@@ -47,6 +47,8 @@ export class WorktreeManagerImpl implements WorktreeManager {
       );
     }
 
+    await this.symlinkNodeModules(absolutePath);
+
     const worktree: Worktree = {
       path: absolutePath,
       branch: branchName,
@@ -57,6 +59,38 @@ export class WorktreeManagerImpl implements WorktreeManager {
 
     logger.info({ worktree }, 'Worktree created');
     return worktree;
+  }
+
+  private async symlinkNodeModules(worktreePath: string): Promise<void> {
+    const mainNodeModules = path.join(this.repoPath, 'node_modules');
+    const worktreeNodeModules = path.join(worktreePath, 'node_modules');
+
+    if (!fs.existsSync(mainNodeModules)) {
+      logger.warn('No node_modules found in main repo, skipping symlink');
+      return;
+    }
+
+    const pnpmStorePath = path.join(mainNodeModules, '.pnpm');
+
+    if (!fs.existsSync(pnpmStorePath)) {
+      logger.warn('No .pnpm store found, skipping symlink');
+      return;
+    }
+
+    try {
+      fs.mkdirSync(worktreeNodeModules, { recursive: true });
+      const symlinkPath = path.join(worktreeNodeModules, '.pnpm');
+      const target = path.relative(worktreePath, pnpmStorePath);
+
+      if (fs.existsSync(symlinkPath)) {
+        fs.unlinkSync(symlinkPath);
+      }
+
+      fs.symlinkSync(target, symlinkPath);
+      logger.info({ symlinkPath, target }, 'Symlinked node_modules/.pnpm into worktree');
+    } catch (err) {
+      logger.warn({ err: String(err) }, 'Failed to symlink node_modules/.pnpm, verifier may fail');
+    }
   }
 
   async remove(worktreePath: string): Promise<void> {
@@ -178,6 +212,10 @@ export class WorktreeManagerImpl implements WorktreeManager {
         err instanceof Error ? err : new Error(String(err)),
       );
     }
+  }
+
+  getNodeModulesBin(): string {
+    return path.join(this.repoPath, 'node_modules', '.bin');
   }
 
   private validatePath(absolutePath: string): void {
