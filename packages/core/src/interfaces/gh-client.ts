@@ -5,6 +5,7 @@ export interface GHClient {
   getFieldOptions(projectId: string, fieldName: string): Promise<Column[]>;
   listReadyCards(projectId: string, readyColumnOptionId: string): Promise<GitHubCard[]>;
   getCard(cardId: string): Promise<GitHubCard>;
+  getCardByIssueNumber(issueNumber: number): Promise<GitHubCard>;
   moveCard(cardId: string, columnOptionId: string): Promise<void>;
   addComment(issueId: string, body: string): Promise<void>;
 }

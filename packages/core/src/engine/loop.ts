@@ -44,7 +44,7 @@ export class LoopEngine {
     }
   }
 
-  async run(signal: AbortSignal): Promise<void> {
+  async run(signal: AbortSignal, targetIssueNumbers?: number[]): Promise<void> {
     await this.stateStore.ensureDir();
 
     if ('owner' in this.config.project) {
@@ -76,12 +76,36 @@ export class LoopEngine {
       const skippedIssueNumbers = new Set(
         allStates.filter((s) => s.state === 'Done' || s.state === 'Blocked').map((s) => s.issueNumber),
       );
-      const filteredCards = cards.filter((c) => !skippedIssueNumbers.has(c.issueNumber));
 
-      if (filteredCards.length === 0) {
-        logger.info('No ready cards, polling...');
-        await this.sleep(this.config.pollInterval, signal);
-        continue;
+      let filteredCards: GitHubCard[];
+
+      if (targetIssueNumbers && targetIssueNumbers.length > 0) {
+        filteredCards = [];
+        for (const issueNumber of targetIssueNumbers) {
+          if (skippedIssueNumbers.has(issueNumber)) {
+            logger.warn({ issueNumber }, 'Skipping card - already processed (Done/Blocked)');
+            continue;
+          }
+          const card = cards.find((c) => c.issueNumber === issueNumber);
+          if (!card) {
+            logger.warn({ issueNumber }, 'Skipping card - not found in Ready column');
+            continue;
+          }
+          filteredCards.push(card);
+        }
+
+        if (filteredCards.length === 0) {
+          logger.info('No target cards available in Ready column');
+          break;
+        }
+      } else {
+        filteredCards = cards.filter((c) => !skippedIssueNumbers.has(c.issueNumber));
+
+        if (filteredCards.length === 0) {
+          logger.info('No ready cards, polling...');
+          await this.sleep(this.config.pollInterval, signal);
+          continue;
+        }
       }
 
       const card = filteredCards[0];
@@ -93,6 +117,10 @@ export class LoopEngine {
       }, signal);
 
       if (signal.aborted) break;
+
+      if (targetIssueNumbers && targetIssueNumbers.length > 0) {
+        break;
+      }
     }
 
     logger.info('Loop engine stopped');
