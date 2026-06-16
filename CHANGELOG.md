@@ -8,6 +8,15 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 Initial release. Implements Addy Osmani's Loop Engineering pattern locally with GitHub Projects v2.
 
+### Unreleased
+
+- `loopy run --card <number>` -- process a specific issue by number
+- `loopy run --cards <numbers...>` -- process multiple issues in order
+- Symlink `node_modules/.pnpm` into worktrees for verifier access
+- Handle shell operators (`&&`, `||`, `;`) in verifier commands via `sh -c`
+- `--set-upstream` flag for git push in worktrees
+- `getCardByIssueNumber()` in GH client for targeted card lookup
+
 ### Features
 
 - Foreground loop runner reading from a GitHub Project v2 board

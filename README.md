@@ -241,6 +241,8 @@ Start the loop engine. Polls the Ready column and processes cards.
 ```bash
 loopy run                          # start loop
 loopy run --once                   # process one card then exit
+loopy run --card 42                # process issue #42 specifically
+loopy run --cards 42 41 40         # process multiple issues in order
 loopy run --spawn                  # auto-start opencode serve
 loopy run --verbose                # debug logging
 loopy run --config-path ./alt.ts   # use alternative config
@@ -249,6 +251,8 @@ loopy run --config-path ./alt.ts   # use alternative config
 Flags:
 - `--spawn` -- Start `opencode serve` as a child process if not already running.
 - `--once` -- Process one card then exit (5-minute timeout).
+- `--card <number>` -- Process a specific issue by number instead of picking from Ready.
+- `--cards <numbers...>` -- Process multiple specific issues in order.
 - `--verbose` -- Set log level to debug.
 - `--config-path <path>` -- Path to config file (default: `loopy.config.ts`).
 

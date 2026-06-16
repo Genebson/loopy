@@ -31,6 +31,14 @@ You are building "loopy" — a local CLI that runs the Loop Engineering pattern.
 - Runtime state: `.loopy/state/*.json` for crash recovery
 - GH auth: `gh auth token` (never store tokens)
 
+## CLI Flags
+- `loopy run --card 42` — process a specific issue
+- `loopy run --cards 42 41 40` — process multiple issues in order
+- `loopy run --once` — process one card and exit
+
+## Creating GitHub Issues / PRs
+When creating issues or PRs via the `gh` CLI, **always use `--body-file`** instead of `--body`. Inline `--body` strings are interpreted by the shell, and markdown backticks trigger command substitution, injecting ANSI-colored output into the body.
+
 ## Strict Constraints
 - No `any` types in production code
 - No `console.log` — use pino logger
