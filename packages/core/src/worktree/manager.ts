@@ -70,43 +70,45 @@ export class WorktreeManagerImpl implements WorktreeManager {
       return;
     }
 
-    const pnpmStorePath = path.join(mainNodeModules, '.pnpm');
-
-    if (!fs.existsSync(pnpmStorePath)) {
-      logger.warn('No .pnpm store found, skipping symlink');
-      return;
-    }
-
     try {
+      if (fs.existsSync(worktreeNodeModules)) {
+        fs.rmSync(worktreeNodeModules, { recursive: true, force: true });
+      }
       fs.mkdirSync(worktreeNodeModules, { recursive: true });
-      const symlinkPath = path.join(worktreeNodeModules, '.pnpm');
-      const target = path.relative(path.dirname(symlinkPath), pnpmStorePath);
 
-      if (fs.existsSync(symlinkPath)) {
-        fs.unlinkSync(symlinkPath);
-      }
+      const pnpmPath = path.join(worktreeNodeModules, '.pnpm');
+      const pnpmTarget = path.relative(worktreeNodeModules, path.join(mainNodeModules, '.pnpm'));
+      fs.symlinkSync(pnpmTarget, pnpmPath);
 
-      fs.symlinkSync(target, symlinkPath);
-      logger.info({ symlinkPath, target }, 'Symlinked node_modules/.pnpm into worktree');
-    } catch (err) {
-      logger.warn({ err: String(err) }, 'Failed to symlink node_modules/.pnpm, verifier may fail');
-    }
+      const binPath = path.join(worktreeNodeModules, '.bin');
+      const binTarget = path.relative(worktreeNodeModules, path.join(mainNodeModules, '.bin'));
+      fs.symlinkSync(binTarget, binPath);
 
-    const mainBin = path.join(mainNodeModules, '.bin');
-    if (fs.existsSync(mainBin)) {
-      try {
-        const binSymlinkPath = path.join(worktreeNodeModules, '.bin');
-        const binTarget = path.relative(path.dirname(binSymlinkPath), mainBin);
-
-        if (fs.existsSync(binSymlinkPath)) {
-          fs.unlinkSync(binSymlinkPath);
+      const loopyMain = path.join(mainNodeModules, '.pnpm', 'node_modules', '@loopy');
+      const loopyWorktree = path.join(worktreeNodeModules, '@loopy');
+      if (fs.existsSync(loopyMain)) {
+        fs.mkdirSync(loopyWorktree, { recursive: true });
+        for (const entry of fs.readdirSync(loopyMain)) {
+          const src = path.join(loopyMain, entry);
+          const dst = path.join(loopyWorktree, entry);
+          if (fs.existsSync(dst)) fs.unlinkSync(dst);
+          fs.symlinkSync(path.relative(loopyWorktree, src), dst);
         }
-
-        fs.symlinkSync(binTarget, binSymlinkPath);
-        logger.info({ binSymlinkPath, binTarget }, 'Symlinked node_modules/.bin into worktree');
-      } catch (err) {
-        logger.warn({ err: String(err) }, 'Failed to symlink node_modules/.bin, scripts may fail');
       }
+
+      for (const entry of fs.readdirSync(mainNodeModules)) {
+        if (entry.startsWith('.') || entry === '@loopy') continue;
+        const src = path.join(mainNodeModules, entry);
+        const dst = path.join(worktreeNodeModules, entry);
+        const stat = fs.lstatSync(src);
+        if (!stat.isSymbolicLink()) continue;
+        if (fs.existsSync(dst)) fs.unlinkSync(dst);
+        fs.symlinkSync(path.relative(worktreeNodeModules, src), dst);
+      }
+
+      logger.info({}, 'Setup worktree node_modules with symlinks');
+    } catch (err) {
+      logger.warn({ err: String(err) }, 'Failed to setup node_modules symlinks');
     }
 
     this.copyDistIntoWorktree(worktreePath);
