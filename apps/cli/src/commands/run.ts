@@ -80,15 +80,26 @@ export const runCommand = new Command('run')
   .option('--config-path <path>', 'Path to loopy.config.ts', 'loopy.config.ts')
   .option('--once', 'Run a single iteration and exit')
   .option('--verbose', 'Enable debug logging')
+  .option('--card <number>', 'Process a specific card by issue number', (val) => Number.parseInt(val, 10))
+  .option('--cards <numbers...>', 'Process specific cards by issue numbers', (vals) => vals.map((v: string) => Number.parseInt(v, 10)))
   .addHelpText(
     'after',
     `
 Examples:
   $ loopy run
   $ loopy run --once --verbose
-  $ loopy run --spawn`,
+  $ loopy run --spawn
+  $ loopy run --card 42
+  $ loopy run --cards 42 41 40`,
   )
-  .action(async (options: { spawn?: boolean; configPath: string; once?: boolean; verbose?: boolean }) => {
+  .action(async (options: {
+    spawn?: boolean;
+    configPath: string;
+    once?: boolean;
+    verbose?: boolean;
+    card?: number;
+    cards?: number[];
+  }) => {
     console.log(chalk.cyan('loopy v0.1.0 — Loop Engineering, locally'));
 
     ensureLoopyDirs();
@@ -139,7 +150,8 @@ Examples:
       if (options.once) {
         const onceController = new AbortController();
 
-        const runPromise = engine.run(onceController.signal);
+        const targetIssueNumbers = options.cards ?? (options.card !== undefined ? [options.card] : undefined);
+        const runPromise = engine.run(onceController.signal, targetIssueNumbers);
 
         const timeout = setTimeout(() => {
           onceController.abort();
@@ -150,7 +162,8 @@ Examples:
 
         controller.abort();
       } else {
-        await engine.run(controller.signal);
+        const targetIssueNumbers = options.cards ?? (options.card !== undefined ? [options.card] : undefined);
+        await engine.run(controller.signal, targetIssueNumbers);
       }
 
       console.log(chalk.green('Loop stopped gracefully'));

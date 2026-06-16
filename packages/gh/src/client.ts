@@ -426,6 +426,53 @@ export class GHProjectClient implements GHClient {
     return this.mapItemToCard(result.node);
   }
 
+  async getCardByIssueNumber(issueNumber: number): Promise<GitHubCard> {
+    if (!this.projectId) throw new ConfigError('Project ID not available. Call getProject() first.');
+
+    const result = await this.graphqlQuery<{
+      node: {
+        items: {
+          nodes: ProjectItem[];
+        };
+      } | null;
+    }>(
+      `query($projectId: ID!, $issueNumber: Int!) {
+        node(id: $projectId) {
+          ... on ProjectV2 {
+            items(first: 100) {
+              nodes {
+                id
+                content {
+                  ... on Issue {
+                    id number title body url
+                    assignees(first: 10) { nodes { login } }
+                    labels(first: 10) { nodes { name } }
+                  }
+                }
+                fieldValues(first: 20) {
+                  nodes {
+                    ... on ProjectV2ItemFieldSingleSelectValue {
+                      name
+                      field { ... on ProjectV2SingleSelectField { name } }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }`,
+      { projectId: this.projectId, issueNumber },
+    );
+
+    const items = result.node?.items?.nodes ?? [];
+    const item = items.find((i) => i.content?.number === issueNumber);
+
+    if (!item) throw new GHAPIError(`Card for issue #${issueNumber} not found in project`);
+
+    return this.mapItemToCard(item);
+  }
+
   async moveCard(cardId: string, columnOptionId: string): Promise<void> {
     if (!this.projectId) throw new ConfigError('Project ID not available. Call getProject() first.');
     if (!this.statusFieldId) throw new ConfigError('Status field ID not available. Call getFieldOptions() first.');
