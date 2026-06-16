@@ -179,12 +179,12 @@ export class LoopEngine {
         }
       }
 
-      const verifierResult = await this.verifierRunner.run(
+      const verifierResult = await this.runVerifierWithBuild(
         this.config.verifier.command,
         worktreePath,
         this.config.verifier.env ?? {},
         this.config.verifier.timeout,
-        this.worktreeManager.getNodeModulesBin(),
+        this.config.verifier.skipBuildIfCache,
       );
       lastVerifierResult = verifierResult;
 
@@ -199,12 +199,12 @@ export class LoopEngine {
             state = transition(state, { type: 'RETRY' });
             logger.info({ card: card.issueNumber, state, retriesLeft }, 'Retrying verifier');
 
-            const retryResult = await this.verifierRunner.run(
+            const retryResult = await this.runVerifierWithBuild(
               this.config.verifier.command,
               worktreePath,
               this.config.verifier.env ?? {},
               this.config.verifier.timeout,
-              this.worktreeManager.getNodeModulesBin(),
+              this.config.verifier.skipBuildIfCache,
             );
 
             if (retryResult.passed) {
@@ -314,6 +314,39 @@ export class LoopEngine {
         error: message,
       });
     }
+  }
+
+  private async runVerifierWithBuild(
+    command: string,
+    worktreePath: string,
+    env: Record<string, string>,
+    timeoutMs: number,
+    skipBuildIfCache: boolean,
+  ): Promise<VerifierResult> {
+    if (!skipBuildIfCache) {
+      const buildResult = await this.verifierRunner.run(
+        'pnpm build',
+        worktreePath,
+        env,
+        timeoutMs,
+        this.worktreeManager.getNodeModulesBin(),
+      );
+
+      if (!buildResult.passed) {
+        logger.error({ buildExitCode: buildResult.exitCode }, 'Build failed');
+        return { ...buildResult, buildPassed: false, passed: false };
+      }
+    }
+
+    const verifierResult = await this.verifierRunner.run(
+      command,
+      worktreePath,
+      env,
+      timeoutMs,
+      this.worktreeManager.getNodeModulesBin(),
+    );
+
+    return { ...verifierResult, buildPassed: true };
   }
 
   private async handleBlocked(

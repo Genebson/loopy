@@ -230,8 +230,10 @@ describe('LoopEngine', () => {
       vi.mocked(worktreeManager.hasChanges).mockResolvedValue(true);
 
       vi.mocked(verifierRunner.run)
+        .mockResolvedValueOnce({ passed: true, exitCode: 0, stdout: '', stderr: '', durationMs: 100, buildPassed: true })
         .mockResolvedValueOnce({ passed: false, exitCode: 1, stdout: '', stderr: 'fail', durationMs: 100 })
-        .mockResolvedValueOnce({ passed: true, exitCode: 0, stdout: '', stderr: '', durationMs: 100 });
+        .mockResolvedValueOnce({ passed: true, exitCode: 0, stdout: '', stderr: '', durationMs: 100, buildPassed: true })
+        .mockResolvedValueOnce({ passed: true, exitCode: 0, stdout: '', stderr: '', durationMs: 100, buildPassed: true });
 
       vi.spyOn(fs.promises, 'mkdir').mockResolvedValue(undefined);
       vi.spyOn(fs.promises, 'readdir').mockResolvedValue([]);
@@ -248,7 +250,7 @@ describe('LoopEngine', () => {
 
       try { await runPromise; } catch { void 0; }
 
-      expect(verifierRunner.run).toHaveBeenCalledTimes(2);
+      expect(verifierRunner.run).toHaveBeenCalledTimes(4);
     });
   });
 

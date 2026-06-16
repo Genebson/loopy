@@ -4,4 +4,5 @@ export interface VerifierResult {
   stdout: string;
   stderr: string;
   durationMs: number;
+  phase?: 'build' | 'test';
 }
