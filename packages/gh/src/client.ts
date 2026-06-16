@@ -190,6 +190,9 @@ export class GHProjectClient implements GHClient {
   }
 
   private getColumnNameById(id: string): string {
+    if (this.cachedColumns.length === 0) {
+      throw new GHAPIError('Column cache is empty. Call getFieldOptions() first to populate column data.');
+    }
     const col = this.cachedColumns.find((c) => c.id === id);
     if (!col) throw new GHAPIError(`No column found with id "${id}". Call getFieldOptions() first.`);
     return col.name;
