@@ -36,21 +36,39 @@ export class OpenCodeHTTPClient implements OpenCodeClient {
   async waitForIdle(sessionId: string, timeoutMs: number): Promise<void> {
     const deadline = Date.now() + timeoutMs;
     const pollInterval = 3000;
-    const warmUpGracePeriod = 15000;
+    const stableThreshold = 10;
+    let lastUpdated = 0;
+    let stableCount = 0;
 
     while (Date.now() < deadline) {
-      const response = await this.request('GET', '/session/status');
-      const statuses = (await response.json()) as Record<string, { type?: string }>;
-      const sessionType = statuses[sessionId]?.type ?? 'unknown';
+      try {
+        const response = await this.request('GET', `/session/${sessionId}`);
+        const sessionData = (await response.json()) as Record<string, unknown>;
+        const timeData = sessionData.time as { updated?: number } | undefined;
+        const currentUpdated = timeData?.updated ?? 0;
+        const status = sessionData.status as string | undefined;
 
-      if (sessionType === 'idle' || sessionType === 'completed') {
-        return;
-      }
-      if (sessionType === 'error') {
-        throw new OpenCodeError('SESSION_ERROR', `Session ${sessionId} ended with error`);
-      }
-      if (sessionType === 'unknown' && Date.now() > deadline - timeoutMs + warmUpGracePeriod) {
-        return;
+        if (status === 'idle' || status === 'completed') {
+          return;
+        }
+        if (status === 'error') {
+          throw new OpenCodeError('SESSION_ERROR', `Session ${sessionId} ended with error`);
+        }
+
+        if (currentUpdated === lastUpdated) {
+          stableCount++;
+          if (stableCount >= stableThreshold) {
+            return;
+          }
+        } else {
+          stableCount = 0;
+          lastUpdated = currentUpdated;
+        }
+      } catch (err) {
+        if (err instanceof OpenCodeError && err.message.includes('SESSION_NOT_FOUND')) {
+          return;
+        }
+        throw err;
       }
 
       await new Promise((resolve) => setTimeout(resolve, pollInterval));
