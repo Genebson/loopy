@@ -18,6 +18,7 @@ export function createMockGHClient(
     ]),
     listReadyCards: vi.fn().mockResolvedValue([]),
     getCard: vi.fn().mockResolvedValue(createTestCard()),
+    getCardByIssueNumber: vi.fn().mockResolvedValue(createTestCard()),
     moveCard: vi.fn().mockResolvedValue(undefined),
     addComment: vi.fn().mockResolvedValue(undefined),
   };
