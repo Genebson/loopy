@@ -507,4 +507,10 @@ export class GHProjectClient implements GHClient {
       { issueId, body },
     );
   }
+
+  async retryCard(issueNumber: number, readyColumnId: string): Promise<void> {
+    const card = await this.getCardByIssueNumber(issueNumber);
+    await this.moveCard(card.id, readyColumnId);
+    await this.addComment(card.contentId, '🤖 loopy retry initiated — card moved back to Ready');
+  }
 }

@@ -8,4 +8,5 @@ export interface GHClient {
   getCardByIssueNumber(issueNumber: number): Promise<GitHubCard>;
   moveCard(cardId: string, columnOptionId: string): Promise<void>;
   addComment(issueId: string, body: string): Promise<void>;
+  retryCard(issueNumber: number, readyColumnId: string): Promise<void>;
 }

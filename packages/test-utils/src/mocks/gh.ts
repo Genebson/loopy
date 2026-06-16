@@ -21,6 +21,7 @@ export function createMockGHClient(
     getCardByIssueNumber: vi.fn().mockResolvedValue(createTestCard()),
     moveCard: vi.fn().mockResolvedValue(undefined),
     addComment: vi.fn().mockResolvedValue(undefined),
+    retryCard: vi.fn().mockResolvedValue(undefined),
   };
 
   if (overrides) {

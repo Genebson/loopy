@@ -82,6 +82,7 @@ export const runCommand = new Command('run')
   .option('--verbose', 'Enable debug logging')
   .option('--card <number>', 'Process a specific card by issue number', (val) => Number.parseInt(val, 10))
   .option('--cards <numbers...>', 'Process specific cards by issue numbers', (value: string, previous: number[] = []) => [...previous, Number.parseInt(value, 10)])
+  .option('--retry <number>', 'Retry a blocked card by issue number', (val) => Number.parseInt(val, 10))
   .addHelpText(
     'after',
     `
@@ -90,7 +91,8 @@ Examples:
   $ loopy run --once --verbose
   $ loopy run --spawn
   $ loopy run --card 42
-  $ loopy run --cards 42 41 40`,
+  $ loopy run --cards 42 41 40
+  $ loopy run --retry 35`,
   )
   .action(async (options: {
     spawn?: boolean;
@@ -99,6 +101,7 @@ Examples:
     verbose?: boolean;
     card?: number;
     cards?: number[];
+    retry?: number;
   }) => {
     console.log(chalk.cyan('loopy v0.1.0 — Loop Engineering, locally'));
 
@@ -136,6 +139,12 @@ Examples:
         config,
         '.loopy/state',
       );
+
+      if (options.retry !== undefined) {
+        await engine.retryBlockedCard(options.retry);
+        console.log(chalk.green(`Card #${options.retry} has been retried`));
+        return;
+      }
 
       const controller = new AbortController();
 

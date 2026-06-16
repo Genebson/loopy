@@ -80,7 +80,7 @@ export class WorktreeManagerImpl implements WorktreeManager {
     try {
       fs.mkdirSync(worktreeNodeModules, { recursive: true });
       const symlinkPath = path.join(worktreeNodeModules, '.pnpm');
-      const target = path.relative(worktreePath, pnpmStorePath);
+      const target = path.relative(path.dirname(symlinkPath), pnpmStorePath);
 
       if (fs.existsSync(symlinkPath)) {
         fs.unlinkSync(symlinkPath);
@@ -90,6 +90,61 @@ export class WorktreeManagerImpl implements WorktreeManager {
       logger.info({ symlinkPath, target }, 'Symlinked node_modules/.pnpm into worktree');
     } catch (err) {
       logger.warn({ err: String(err) }, 'Failed to symlink node_modules/.pnpm, verifier may fail');
+    }
+
+    const mainBin = path.join(mainNodeModules, '.bin');
+    if (fs.existsSync(mainBin)) {
+      try {
+        const binSymlinkPath = path.join(worktreeNodeModules, '.bin');
+        const binTarget = path.relative(path.dirname(binSymlinkPath), mainBin);
+
+        if (fs.existsSync(binSymlinkPath)) {
+          fs.unlinkSync(binSymlinkPath);
+        }
+
+        fs.symlinkSync(binTarget, binSymlinkPath);
+        logger.info({ binSymlinkPath, binTarget }, 'Symlinked node_modules/.bin into worktree');
+      } catch (err) {
+        logger.warn({ err: String(err) }, 'Failed to symlink node_modules/.bin, scripts may fail');
+      }
+    }
+
+    this.copyDistIntoWorktree(worktreePath);
+  }
+
+  private copyDistIntoWorktree(worktreePath: string): void {
+    try {
+      const dirs = ['packages', 'apps'];
+      for (const dir of dirs) {
+        const mainDir = path.join(this.repoPath, dir);
+        if (!fs.existsSync(mainDir)) continue;
+
+        for (const entry of fs.readdirSync(mainDir)) {
+          const mainDist = path.join(mainDir, entry, 'dist');
+          const worktreeDist = path.join(worktreePath, dir, entry, 'dist');
+
+          if (fs.existsSync(mainDist)) {
+            fs.mkdirSync(path.dirname(worktreeDist), { recursive: true });
+            this.copyRecursiveSync(mainDist, worktreeDist);
+            logger.info({ src: mainDist, dst: worktreeDist }, 'Copied dist into worktree');
+          }
+        }
+      }
+    } catch (err) {
+      logger.warn({ err: String(err) }, 'Failed to copy dist directories into worktree');
+    }
+  }
+
+  private copyRecursiveSync(src: string, dst: string): void {
+    const stat = fs.statSync(src);
+    if (stat.isDirectory()) {
+      fs.mkdirSync(dst, { recursive: true });
+      for (const entry of fs.readdirSync(src)) {
+        this.copyRecursiveSync(path.join(src, entry), path.join(dst, entry));
+      }
+    } else {
+      fs.mkdirSync(path.dirname(dst), { recursive: true });
+      fs.copyFileSync(src, dst);
     }
   }
 

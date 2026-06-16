@@ -1,4 +1,6 @@
 import { execSync } from 'node:child_process';
+import fs from 'node:fs';
+import path from 'node:path';
 import type { GHClient } from '../interfaces/gh-client.js';
 import type { OpenCodeClient } from '../interfaces/opencode-client.js';
 import type { WorktreeManager } from '../interfaces/worktree-manager.js';
@@ -375,11 +377,17 @@ ${stdoutExcerpt}
     const body = `Implements #${card.issueNumber}\n\n${card.url}\n\n${verifierSection}`.slice(0, 65000);
 
     try {
-      const result = execSync(
-        `gh pr create --title "${title.replace(/"/g, '\\"')}" --body "${body.replace(/"/g, '\\"')}" --head "${branch}"`,
-        { cwd: worktreePath, encoding: 'utf-8' },
-      );
-      return result.trim();
+      const bodyFile = path.join(worktreePath, `.loopy-pr-body-${Date.now()}.md`);
+      fs.writeFileSync(bodyFile, body, 'utf-8');
+      try {
+        const result = execSync(
+          `gh pr create --title ${JSON.stringify(title)} --body-file ${JSON.stringify(bodyFile)} --head ${JSON.stringify(branch)}`,
+          { cwd: worktreePath, encoding: 'utf-8' },
+        );
+        return result.trim();
+      } finally {
+        try { fs.unlinkSync(bodyFile); } catch {}
+      }
     } catch (err) {
       logger.error({ err: String(err) }, 'Failed to create PR via gh CLI');
       throw err;
@@ -406,5 +414,46 @@ ${stdoutExcerpt}
 
   private setProperty(key: 'projectId' | 'readyColumnOptionId', value: string): void {
     (this as unknown as Record<string, string>)[key] = value;
+  }
+
+  async retryBlockedCard(issueNumber: number): Promise<void> {
+    await this.stateStore.ensureDir();
+
+    if ('owner' in this.config.project) {
+      const project = await this.ghClient.getProject({
+        owner: this.config.project.owner,
+        number: this.config.project.number,
+      });
+      this.setProperty('projectId', project.id);
+    }
+
+    const columns = await this.ghClient.getFieldOptions(this.projectId, 'Status');
+    const readyColumn = columns.find((c) => c.role === 'ready');
+    const inProgressColumn = columns.find((c) => c.role === 'inProgress');
+    const inReviewColumn = columns.find((c) => c.role === 'inReview');
+    const blockedColumn = columns.find((c) => c.role === 'blocked');
+
+    if (!readyColumn || !inProgressColumn || !inReviewColumn || !blockedColumn) {
+      throw new Error('Missing required column configurations');
+    }
+
+    this.setProperty('readyColumnOptionId', readyColumn.id);
+
+    const state = await this.stateStore.load(issueNumber);
+    if (!state) {
+      throw new Error(`No state file found for card #${issueNumber}. Is it actually blocked?`);
+    }
+
+    if (state.state !== 'Blocked') {
+      throw new Error(`Card #${issueNumber} is not Blocked (current state: ${state.state}). Use --card to process non-blocked cards.`);
+    }
+
+    const card = await this.ghClient.getCardByIssueNumber(issueNumber);
+
+    await this.stateStore.delete(issueNumber);
+    await this.ghClient.moveCard(card.id, readyColumn.id);
+    await this.ghClient.addComment(card.contentId, '🤖 loopy retry initiated — card moved back to Ready');
+
+    logger.info({ issueNumber, branch: state.branch }, 'Blocked card retry initiated');
   }
 }
