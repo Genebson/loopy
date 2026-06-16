@@ -164,7 +164,7 @@ Examples:
 
         const timeout = setTimeout(() => {
           onceController.abort();
-        }, 300_000);
+        }, 900_000);
 
         await runPromise.catch(() => { void 0; });
         clearTimeout(timeout);

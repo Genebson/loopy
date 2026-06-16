@@ -235,6 +235,29 @@ export class LoopEngine {
               return;
             }
           }
+          if (signal.aborted) {
+            logger.info({ card: card.issueNumber }, 'Signal aborted during retries, exiting');
+            return;
+          }
+
+          if (retriesLeft <= 0 && state !== 'Blocked') {
+            state = transition(state, { type: 'VERIFIER_FAILED', retriesLeft: 0 });
+          }
+
+          if (state === 'Blocked') {
+            await this.handleBlocked(card, columns.blockedColumnId, 'Verifier failed after max retries', worktreePath);
+            await this.stateStore.save({
+              issueNumber: card.issueNumber,
+              state: 'Blocked',
+              retriesLeft: 0,
+              branch,
+              worktreePath,
+              startedAt: new Date().toISOString(),
+              completedAt: new Date().toISOString(),
+              error: `Verifier failed after ${this.config.retries} retries`,
+            });
+            return;
+          }
         } else {
           await this.handleBlocked(card, columns.blockedColumnId, 'Verifier failed with no retries left', worktreePath);
           await this.stateStore.save({
