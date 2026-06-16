@@ -84,14 +84,17 @@ export class WorktreeManagerImpl implements WorktreeManager {
       const binTarget = path.relative(worktreeNodeModules, path.join(mainNodeModules, '.bin'));
       fs.symlinkSync(binTarget, binPath);
 
-      const loopyMain = path.join(mainNodeModules, '.pnpm', 'node_modules', '@loopy');
       const loopyWorktree = path.join(worktreeNodeModules, '@loopy');
-      if (fs.existsSync(loopyMain)) {
-        fs.mkdirSync(loopyWorktree, { recursive: true });
-        for (const entry of fs.readdirSync(loopyMain)) {
-          const src = path.join(loopyMain, entry);
+      if (fs.existsSync(loopyWorktree)) {
+        fs.rmSync(loopyWorktree, { recursive: true, force: true });
+      }
+      fs.mkdirSync(loopyWorktree, { recursive: true });
+
+      const loopyPackagesMain = path.join(mainNodeModules, '.pnpm', 'node_modules', '@loopy');
+      if (fs.existsSync(loopyPackagesMain)) {
+        for (const entry of fs.readdirSync(loopyPackagesMain)) {
+          const src = path.join(loopyPackagesMain, entry);
           const dst = path.join(loopyWorktree, entry);
-          if (fs.existsSync(dst)) fs.unlinkSync(dst);
           fs.symlinkSync(path.relative(loopyWorktree, src), dst);
         }
       }
