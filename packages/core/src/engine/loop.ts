@@ -156,6 +156,7 @@ export class LoopEngine {
         worktreePath,
         this.config.verifier.env ?? {},
         this.config.verifier.timeout,
+        this.worktreeManager.getNodeModulesBin(),
       );
       lastVerifierResult = verifierResult;
 
@@ -175,6 +176,7 @@ export class LoopEngine {
               worktreePath,
               this.config.verifier.env ?? {},
               this.config.verifier.timeout,
+              this.worktreeManager.getNodeModulesBin(),
             );
 
             if (retryResult.passed) {

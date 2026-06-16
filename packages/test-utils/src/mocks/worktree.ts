@@ -21,6 +21,7 @@ export function createMockWorktreeManager(
     commit: vi.fn().mockResolvedValue(undefined),
     push: vi.fn().mockResolvedValue(undefined),
     getCurrentBranch: vi.fn().mockResolvedValue('loopy/1-test'),
+    getNodeModulesBin: vi.fn().mockReturnValue('/tmp/loopy-test/node_modules/.bin'),
   };
 
   if (overrides) {
