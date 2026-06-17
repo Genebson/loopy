@@ -16,6 +16,13 @@ export const loopyConfigSchema = z.object({
     command: z.string(),
     timeout: z.number().int().positive().default(600_000),
     env: z.record(z.string()).optional(),
+    build: z
+      .object({
+        command: z.string().default('pnpm build'),
+        timeout: z.number().int().positive().default(300_000),
+        skipIfUnchanged: z.boolean().default(false),
+      })
+      .default({}),
   }),
   retries: z.number().int().min(0).default(3),
   opencode: z.object({

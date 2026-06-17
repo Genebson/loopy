@@ -12,6 +12,11 @@ export default defineConfig({
   verifier: {
     command: 'pnpm test && pnpm lint',
     timeout: 600000,
+    build: {
+      command: 'pnpm build',
+      timeout: 300000,
+      skipIfUnchanged: false,
+    },
   },
   retries: 3,
 });

@@ -181,6 +181,41 @@ export class LoopEngine {
         }
       }
 
+      const buildConfig = this.config.verifier.build;
+
+      if (!buildConfig.skipIfUnchanged) {
+        logger.info({ command: buildConfig.command }, 'Running build step');
+        const buildResult = await this.verifierRunner.run(
+          buildConfig.command,
+          worktreePath,
+          this.config.verifier.env ?? {},
+          buildConfig.timeout,
+          this.worktreeManager.getNodeModulesBin(),
+        );
+
+        if (!buildResult.passed) {
+          const buildError = `Build failed with exit code ${buildResult.exitCode}`;
+          logger.error({ card: card.issueNumber, buildError, stdout: buildResult.stdout, stderr: buildResult.stderr }, 'Build step failed');
+
+          await this.handleBlocked(card, columns.blockedColumnId, buildError, worktreePath);
+          await this.stateStore.save({
+            issueNumber: card.issueNumber,
+            state: 'Blocked',
+            retriesLeft,
+            branch,
+            worktreePath,
+            startedAt: new Date().toISOString(),
+            completedAt: new Date().toISOString(),
+            error: `Build failed:\n${buildResult.stderr || buildResult.stdout}`.slice(0, 5000),
+          });
+          return;
+        }
+
+        logger.info({ durationMs: buildResult.durationMs }, 'Build step passed');
+      } else {
+        logger.info('Skipping build step (skipIfUnchanged=true)');
+      }
+
       const verifierResult = await this.verifierRunner.run(
         this.config.verifier.command,
         worktreePath,
