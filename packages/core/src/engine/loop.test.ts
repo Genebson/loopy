@@ -21,6 +21,7 @@ function createMockGHClient() {
     ]),
     listReadyCards: vi.fn().mockResolvedValue([]),
     getCard: vi.fn().mockResolvedValue(createTestCard()),
+    getCardByIssueNumber: vi.fn().mockResolvedValue(createTestCard()),
     moveCard: vi.fn().mockResolvedValue(undefined),
     addComment: vi.fn().mockResolvedValue(undefined),
   };
@@ -244,6 +245,7 @@ describe('LoopEngine', () => {
       vi.mocked(worktreeManager.hasChanges).mockResolvedValue(true);
 
       vi.mocked(verifierRunner.run)
+        .mockResolvedValueOnce({ passed: true, exitCode: 0, stdout: '', stderr: '', durationMs: 100 })
         .mockResolvedValueOnce({ passed: false, exitCode: 1, stdout: '', stderr: 'fail', durationMs: 100 })
         .mockResolvedValueOnce({ passed: true, exitCode: 0, stdout: '', stderr: '', durationMs: 100 });
 
@@ -449,6 +451,94 @@ describe('LoopEngine', () => {
         expect.stringContaining('no changes'),
       );
       expect(worktreeManager.commit).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('retryBlockedCard', () => {
+    it('throws when no state file exists', async () => {
+      const { engine, ghClient } = createTestEngine();
+
+      vi.mocked(ghClient.getProject).mockResolvedValue({ id: 'PVT_test', title: 'Test Project' });
+      vi.mocked(ghClient.getFieldOptions).mockResolvedValue([
+        { id: 'opt_ready', name: 'Ready', role: 'ready' as const },
+        { id: 'opt_in_progress', name: 'In Progress', role: 'inProgress' as const },
+        { id: 'opt_in_review', name: 'In Review', role: 'inReview' as const },
+        { id: 'opt_blocked', name: 'Blocked', role: 'blocked' as const },
+      ]);
+
+      vi.spyOn(fs.promises, 'readFile').mockRejectedValue(new Error('ENOENT'));
+
+      await expect(engine.retryBlockedCard(99)).rejects.toThrow('No state file found for card #99');
+    });
+
+    it('throws when card is not in Blocked state', async () => {
+      const { engine, ghClient } = createTestEngine();
+
+      vi.mocked(ghClient.getProject).mockResolvedValue({ id: 'PVT_test', title: 'Test Project' });
+      vi.mocked(ghClient.getFieldOptions).mockResolvedValue([
+        { id: 'opt_ready', name: 'Ready', role: 'ready' as const },
+        { id: 'opt_in_progress', name: 'In Progress', role: 'inProgress' as const },
+        { id: 'opt_in_review', name: 'In Review', role: 'inReview' as const },
+        { id: 'opt_blocked', name: 'Blocked', role: 'blocked' as const },
+      ]);
+
+      const state = {
+        issueNumber: 10,
+        state: 'Done' as const,
+        retriesLeft: 0,
+        branch: 'loopy/10-test',
+        worktreePath: '/tmp/wt/10-test',
+        startedAt: new Date().toISOString(),
+        completedAt: new Date().toISOString(),
+        error: null,
+      };
+
+      vi.spyOn(fs.promises, 'readFile').mockResolvedValue(JSON.stringify(state));
+
+      await expect(engine.retryBlockedCard(10)).rejects.toThrow('Card #10 is not Blocked (current state: Done)');
+    });
+
+    it('retries a blocked card successfully', async () => {
+      const { engine, ghClient, opencodeClient, worktreeManager, verifierRunner } = createTestEngine();
+
+      const card = createTestCard({ issueNumber: 10, title: 'Retry test' });
+
+      vi.mocked(ghClient.getProject).mockResolvedValue({ id: 'PVT_test', title: 'Test Project' });
+      vi.mocked(ghClient.getFieldOptions).mockResolvedValue([
+        { id: 'opt_ready', name: 'Ready', role: 'ready' as const },
+        { id: 'opt_in_progress', name: 'In Progress', role: 'inProgress' as const },
+        { id: 'opt_in_review', name: 'In Review', role: 'inReview' as const },
+        { id: 'opt_blocked', name: 'Blocked', role: 'blocked' as const },
+      ]);
+      vi.mocked(ghClient.getCardByIssueNumber).mockResolvedValue(card);
+      vi.mocked(worktreeManager.hasChanges).mockResolvedValue(true);
+
+      const state = {
+        issueNumber: 10,
+        state: 'Blocked' as const,
+        retriesLeft: 2,
+        branch: 'loopy/10-retry-test',
+        worktreePath: '/tmp/wt/10-retry-test',
+        startedAt: new Date().toISOString(),
+        completedAt: new Date().toISOString(),
+        error: 'Build failed',
+      };
+
+      vi.spyOn(fs.promises, 'readFile').mockResolvedValue(JSON.stringify(state));
+      vi.spyOn(fs.promises, 'unlink').mockResolvedValue(undefined);
+
+      const { execSync } = await import('node:child_process');
+      vi.mocked(execSync).mockReturnValue('https://github.com/org/repo/pull/10\n');
+
+      const controller = new AbortController();
+      const runPromise = engine.retryBlockedCard(10);
+      await new Promise((r) => setTimeout(r, 300));
+      controller.abort();
+      await runPromise;
+
+      expect(ghClient.moveCard).toHaveBeenCalledWith(card.id, 'opt_ready');
+      expect(ghClient.addComment).toHaveBeenCalledWith(card.contentId, expect.stringContaining('loopy retry initiated'));
+      expect(verifierRunner.run).toHaveBeenCalled();
     });
   });
 });

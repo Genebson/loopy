@@ -137,11 +137,12 @@ export class LoopEngine {
       blockedColumnId: string;
     },
     signal: AbortSignal,
+    previousState?: { branch: string; worktreePath: string; retriesLeft: number },
   ): Promise<void> {
     let state: LoopState = 'Idle';
-    let retriesLeft = this.config.retries;
-    let branch = '';
-    let worktreePath = '';
+    let retriesLeft = previousState?.retriesLeft ?? this.config.retries;
+    let branch = previousState?.branch ?? '';
+    let worktreePath = previousState?.worktreePath ?? '';
     let lastVerifierResult: VerifierResult | null = null;
 
     state = transition(state, { type: 'CARD_PICKED' });
@@ -151,10 +152,23 @@ export class LoopEngine {
       await this.ghClient.moveCard(card.id, columns.inProgressColumnId);
       await this.ghClient.addComment(card.contentId, '🤖 loopy started');
 
-      const slug = this.slugify(card.title);
-      const worktree = await this.worktreeManager.create(card.issueNumber, slug);
-      branch = worktree.branch;
-      worktreePath = worktree.path;
+      if (previousState && worktreePath) {
+        const fs = await import('node:fs');
+        if (fs.existsSync(worktreePath)) {
+          logger.info({ card: card.issueNumber, branch, worktreePath }, 'Reusing existing worktree for retry');
+        } else {
+          logger.info({ card: card.issueNumber, worktreePath }, 'Previous worktree not found, creating new one');
+          const slug = this.slugify(card.title);
+          const worktree = await this.worktreeManager.create(card.issueNumber, slug);
+          branch = worktree.branch;
+          worktreePath = worktree.path;
+        }
+      } else {
+        const slug = this.slugify(card.title);
+        const worktree = await this.worktreeManager.create(card.issueNumber, slug);
+        branch = worktree.branch;
+        worktreePath = worktree.path;
+      }
 
       state = transition(state, { type: 'SESSION_CREATED' });
       logger.info({ card: card.issueNumber, state }, 'Session created');
@@ -512,6 +526,20 @@ ${stdoutExcerpt}
     await this.ghClient.moveCard(card.id, readyColumn.id);
     await this.ghClient.addComment(card.contentId, '🤖 loopy retry initiated — card moved back to Ready');
 
-    logger.info({ issueNumber, branch: state.branch }, 'Blocked card retry initiated');
+    logger.info({ issueNumber, branch: state.branch, worktreePath: state.worktreePath }, 'Blocked card retry initiated');
+
+    const columnIds = {
+      readyColumnId: readyColumn.id,
+      inProgressColumnId: inProgressColumn.id,
+      inReviewColumnId: inReviewColumn.id,
+      blockedColumnId: blockedColumn.id,
+    };
+
+    const signal = new AbortController();
+    await this.processCard(card, columnIds, signal.signal, {
+      branch: state.branch,
+      worktreePath: state.worktreePath,
+      retriesLeft: state.retriesLeft,
+    });
   }
 }
