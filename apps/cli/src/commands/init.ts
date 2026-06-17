@@ -185,6 +185,11 @@ export default defineConfig({
   verifier: {
     command: '${answers.verifierCommand}',
     timeout: ${answers.verifierTimeout}000,
+    build: {
+      command: 'pnpm build',
+      timeout: 300000,
+      skipIfUnchanged: false,
+    },
   },
   retries: ${answers.retries},
 });

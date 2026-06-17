@@ -108,6 +108,11 @@ function createTestConfig(overrides?: Partial<LoopyConfig>): LoopyConfig {
     verifier: {
       command: 'pnpm test',
       timeout: 600_000,
+      build: {
+        command: 'pnpm build',
+        timeout: 300_000,
+        skipIfUnchanged: false,
+      },
     },
     retries: 3,
     opencode: {
@@ -257,7 +262,7 @@ describe('LoopEngine', () => {
 
       try { await runPromise; } catch { void 0; }
 
-      expect(verifierRunner.run).toHaveBeenCalledTimes(2);
+      expect(verifierRunner.run).toHaveBeenCalledTimes(3);
     });
   });
 

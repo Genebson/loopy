@@ -13,6 +13,7 @@ export type LoopEvent =
   | { type: 'CARD_PICKED' }
   | { type: 'SESSION_CREATED' }
   | { type: 'PROMPT_SENT' }
+  | { type: 'BUILD_FAILED'; error: string }
   | { type: 'VERIFIER_PASSED' }
   | { type: 'VERIFIER_FAILED'; retriesLeft: number }
   | { type: 'PR_OPENED' }
