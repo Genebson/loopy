@@ -56,7 +56,7 @@ describe('VerifierRunnerImpl', () => {
 
   it('captures partial output before timeout', async () => {
     const result = await runner.run(
-      'node -e console.log("partial");setTimeout(function(){},30000)',
+      'echo partial && sleep 30',
       process.cwd(),
       {},
       500,

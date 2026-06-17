@@ -114,6 +114,17 @@ export class WorktreeManagerImpl implements WorktreeManager {
       logger.warn({ err: String(err) }, 'Failed to setup node_modules symlinks');
     }
 
+    try {
+      const { execSync } = await import('node:child_process');
+      execSync('pnpm install --offline', {
+        cwd: worktreePath,
+        stdio: 'pipe',
+      });
+      logger.info({}, 'Ran pnpm install --offline in worktree');
+    } catch (err) {
+      logger.warn({ err: String(err) }, 'Failed to run pnpm install --offline in worktree');
+    }
+
     this.copyDistIntoWorktree(worktreePath);
   }
 

@@ -184,10 +184,19 @@ describe('LoopEngine', () => {
       vi.spyOn(fs.promises, 'readdir').mockResolvedValue([]);
       vi.spyOn(fs.promises, 'writeFile').mockResolvedValue(undefined);
       vi.spyOn(fs.promises, 'rename').mockResolvedValue(undefined);
+      vi.spyOn(fs, 'writeFileSync').mockReturnValue(undefined);
+
+      vi.mocked(verifierRunner.run).mockResolvedValue({
+        passed: true,
+        exitCode: 0,
+        stdout: 'All tests pass',
+        stderr: '',
+        durationMs: 100,
+      });
 
       const controller = new AbortController();
       const runPromise = engine.run(controller.signal);
-      await new Promise((r) => setTimeout(r, 300));
+      await new Promise((r) => setTimeout(r, 500));
       controller.abort();
 
       try { await runPromise; } catch { void 0; }
