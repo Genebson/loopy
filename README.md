@@ -257,7 +257,7 @@ Flags:
 - `--once` -- Process one card then exit (5-minute timeout).
 - `--card <number>` -- Process a specific issue by number instead of picking from Ready.
 - `--cards <numbers...>` -- Process multiple specific issues in order.
-- `--retry <number>` -- Retry a blocked card by issue number. Moves the card back to Ready and re-processes it.
+- `--retry <number>` -- Retry a blocked card by issue number. Moves the card back to In Progress and re-processes it.
 - `--verbose` -- Set log level to debug.
 - `--config-path <path>` -- Path to config file (default: `loopy.config.ts`).
 
@@ -486,7 +486,7 @@ verifier: {
 
 ### loopy keeps reprocessing the same card
 
-If a card is in the Ready column but has a state file in `.loopy/state/` with state `Blocked`, loopy skips it. Use `loopy run --retry <number>` to retry a blocked card.
+If a card is in the Ready column but has a state file in `.loopy/state/` with state `Blocked`, loopy skips it. Use `loopy run --retry <number>` to retry a blocked card — it moves directly to In Progress and re-processes.
 
 ## Limitations
 

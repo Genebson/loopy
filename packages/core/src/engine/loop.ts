@@ -523,8 +523,8 @@ ${stdoutExcerpt}
     const card = await this.ghClient.getCardByIssueNumber(issueNumber);
 
     await this.stateStore.delete(issueNumber);
-    await this.ghClient.moveCard(card.id, readyColumn.id);
-    await this.ghClient.addComment(card.contentId, '🤖 loopy retry initiated — card moved back to Ready');
+    await this.ghClient.moveCard(card.id, inProgressColumn.id);
+    await this.ghClient.addComment(card.contentId, '🤖 loopy retry initiated — card moved back to In Progress');
 
     logger.info({ issueNumber, branch: state.branch, worktreePath: state.worktreePath }, 'Blocked card retry initiated');
 

@@ -536,7 +536,7 @@ describe('LoopEngine', () => {
       controller.abort();
       await runPromise;
 
-      expect(ghClient.moveCard).toHaveBeenCalledWith(card.id, 'opt_ready');
+      expect(ghClient.moveCard).toHaveBeenCalledWith(card.id, 'opt_in_progress');
       expect(ghClient.addComment).toHaveBeenCalledWith(card.contentId, expect.stringContaining('loopy retry initiated'));
       expect(verifierRunner.run).toHaveBeenCalled();
     });
