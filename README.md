@@ -73,9 +73,11 @@ Each card follows this pipeline:
 2. **Create** a git worktree and branch (`loopy/{issueNumber}-{slug}`)
 3. **Send** the card title and body as a prompt to opencode v2
 4. **Wait** for opencode to finish (auto-approving permissions if configured)
-5. **Run** the verifier command (e.g., `pnpm test && pnpm lint`)
-6. **If** verifier passes: commit, push, open a PR, move card to InReview
-7. **If** verifier fails: retry up to N times, then move card to Blocked
+5. **Build** the project (runs `pnpm build` to catch compilation errors)
+6. **Run** the verifier command (e.g., `pnpm test && pnpm lint`)
+7. **If** verifier passes: commit, push, open a PR, move card to InReview
+8. **If** verifier fails: retry up to N times, then move card to Blocked
+9. **Build errors** block immediately without consuming retries (they're structural issues)
 
 ## State machine
 
@@ -206,6 +208,7 @@ export default defineConfig({
 | `verifier.command` | `string` | (required) | Shell command to verify changes. Exit code 0 = pass. |
 | `verifier.timeout` | `number` | `600000` | Timeout in milliseconds for the verifier. After timeout, SIGTERM then SIGKILL after 5s. |
 | `verifier.env` | `Record<string, string>` | `{}` | Extra environment variables for the verifier process. |
+| `verifier.build` | `object` | `{}` | Build step config: `{ command, timeout, skipIfUnchanged }`. Runs before verifier command to catch compilation errors. Build errors block immediately without consuming retries. |
 | `retries` | `number` | `3` | Max retries on verifier failure before marking card as Blocked. |
 | `opencode.url` | `string` | `"http://localhost:4096"` | URL of the opencode v2 HTTP server. |
 | `opencode.autoApprove` | `boolean` | `true` | Automatically approve opencode permission requests. |
@@ -243,6 +246,7 @@ loopy run                          # start loop
 loopy run --once                   # process one card then exit
 loopy run --card 42                # process issue #42 specifically
 loopy run --cards 42 41 40         # process multiple issues in order
+loopy run --retry 35               # retry a blocked card #35
 loopy run --spawn                  # auto-start opencode serve
 loopy run --verbose                # debug logging
 loopy run --config-path ./alt.ts   # use alternative config
@@ -253,6 +257,7 @@ Flags:
 - `--once` -- Process one card then exit (5-minute timeout).
 - `--card <number>` -- Process a specific issue by number instead of picking from Ready.
 - `--cards <numbers...>` -- Process multiple specific issues in order.
+- `--retry <number>` -- Retry a blocked card by issue number. Moves the card back to Ready and re-processes it.
 - `--verbose` -- Set log level to debug.
 - `--config-path <path>` -- Path to config file (default: `loopy.config.ts`).
 
@@ -481,7 +486,7 @@ verifier: {
 
 ### loopy keeps reprocessing the same card
 
-If a card is in the Ready column but has a state file in `.loopy/state/` with state `Blocked`, loopy skips it. If you want to retry, either delete the state file or move the card out of Ready and back in.
+If a card is in the Ready column but has a state file in `.loopy/state/` with state `Blocked`, loopy skips it. Use `loopy run --retry <number>` to retry a blocked card.
 
 ## Limitations
 
