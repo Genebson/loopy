@@ -103,7 +103,7 @@ fetch_source() {
     info "Updating existing installation at $LOOPY_HOME"
     git -C "$LOOPY_HOME" fetch --all --quiet
     git -C "$LOOPY_HOME" checkout "$LOOPY_REF" --quiet
-    git -C "$LOOPY_HOME" pull --quiet
+    git -C "$LOOPY_HOME" reset --hard "origin/$LOOPY_REF" --quiet
   else
     info "Cloning $LOOPY_REPO (ref: $LOOPY_REF)"
     if is_sha "$LOOPY_REF"; then
