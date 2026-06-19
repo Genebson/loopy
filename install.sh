@@ -158,13 +158,12 @@ check_path() {
       local shell_rc
       shell_rc="$(detect_shell_rc)"
 
-      warn "$bin_dir is not in PATH."
+      info "Adding $bin_dir to PATH in $shell_rc"
+      echo "" >> "$shell_rc"
+      echo "export PATH=\"$bin_dir:\$PATH\"" >> "$shell_rc"
+      ok "Added PATH export to $shell_rc"
       echo ""
-      echo "  Add this to your $shell_rc:"
-      echo ""
-      echo "    export PATH=\"$bin_dir:\$PATH\""
-      echo ""
-      echo "  Then reload your shell:"
+      echo "  Reload your shell to use loopy:"
       echo ""
       echo "    source \"$shell_rc\""
       echo ""
