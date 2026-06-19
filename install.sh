@@ -30,66 +30,57 @@ BLUE='\033[0;34m'
 NC='\033[0m'
 
 info()  { printf "${BLUE}==>%b %s%b\n" "$NC" "$1" "$NC"; }
-ok()    { printf "${GREEN}✓ %s%b\n" "$1" "$NC"; }
-warn()  { printf "${YELLOW}! %s%b\n" "$1" "$NC"; }
-fail()  { printf "${RED}✗ %s%b\n" "$1" "$NC" >&2; exit 1; }
+ok()    { printf "${GREEN}✓%b %s%b\n" "$NC" "$1" "$NC"; }
+warn()  { printf "${YELLOW}!%b %s%b\n" "$NC" "$1" "$NC"; }
+fail()  { printf "${RED}✗%b %s%b\n" "$NC" "$1" "$NC" >&2; exit 1; }
 
-detect_os() {
-  local uname_out
-  uname_out="$(uname -s)"
-  case "$uname_out" in
-    Darwin*) echo "darwin" ;;
-    Linux*)  echo "linux" ;;
-    *)       fail "Unsupported OS: $uname_out" ;;
-  esac
-}
-
-detect_arch() {
-  local arch
-  arch="$(uname -m)"
-  case "$arch" in
-    x86_64|amd64) echo "x64" ;;
-    arm64|aarch64) echo "arm64" ;;
-    *)             fail "Unsupported architecture: $arch" ;;
-  esac
-}
+step() { printf "   %-30s" "$1"; }
 
 check_node() {
+  step "Checking Node.js"
   if ! command -v node >/dev/null 2>&1; then
+    echo "✗ FAILED"
     fail "Node.js is not installed. Install Node.js >= 25.0.0 from https://nodejs.org"
   fi
   local version
   version="$(node -v | sed 's/v//' | cut -d. -f1)"
   if [ "$version" -lt 25 ]; then
+    echo "✗ FAILED"
     fail "Node.js >= 25.0.0 required, found v$(node -v). Upgrade at https://nodejs.org"
   fi
-  ok "Node.js $(node -v)"
+  echo "✓ $(node -v)"
 }
 
 check_pnpm() {
+  step "Checking pnpm"
   if ! command -v pnpm >/dev/null 2>&1; then
+    echo "✗ FAILED"
     fail "pnpm is not installed. Install pnpm >= 10 with: corepack enable && corepack prepare pnpm@latest --activate"
   fi
   local major
   major="$(pnpm -v | cut -d. -f1)"
   if [ "$major" -lt 10 ]; then
+    echo "✗ FAILED"
     fail "pnpm >= 10.0.0 required, found v$(pnpm -v). Upgrade with: corepack prepare pnpm@latest --activate"
   fi
-  ok "pnpm v$(pnpm -v)"
+  echo "✓ $(pnpm -v)"
 }
 
 check_git() {
+  step "Checking git"
   if ! command -v git >/dev/null 2>&1; then
+    echo "✗ FAILED"
     fail "git is not installed. Install git from https://git-scm.com"
   fi
-  ok "git $(git --version | awk '{print $3}')"
+  echo "✓ $(git --version | awk '{print $3}')"
 }
 
 check_gh() {
+  step "Checking gh CLI"
   if command -v gh >/dev/null 2>&1; then
-    ok "gh $(gh --version | head -1 | awk '{print $3}')"
+    echo "✓ $(gh --version | head -1 | awk '{print $3}')"
   else
-    warn "gh CLI not found. Install it for 'loopy run' support: https://cli.github.com"
+    echo "✓ (not found - optional)"
   fi
 }
 
@@ -99,13 +90,12 @@ is_sha() {
 }
 
 fetch_source() {
+  step "Fetching source"
   if [ -d "$LOOPY_HOME/.git" ]; then
-    info "Updating existing installation at $LOOPY_HOME"
     git -C "$LOOPY_HOME" fetch --all --quiet
     git -C "$LOOPY_HOME" checkout "$LOOPY_REF" --quiet
     git -C "$LOOPY_HOME" reset --hard "origin/$LOOPY_REF" --quiet
   else
-    info "Cloning $LOOPY_REPO (ref: $LOOPY_REF)"
     if is_sha "$LOOPY_REF"; then
       git clone "$LOOPY_REPO" "$LOOPY_HOME" --quiet
       git -C "$LOOPY_HOME" checkout "$LOOPY_REF" --quiet
@@ -113,20 +103,29 @@ fetch_source() {
       git clone --branch "$LOOPY_REF" "$LOOPY_REPO" "$LOOPY_HOME" --quiet
     fi
   fi
-  ok "Source ready at $LOOPY_HOME"
+  echo "✓ $LOOPY_REF"
+}
+
+install_deps() {
+  step "Installing dependencies"
+  if ! (cd "$LOOPY_HOME" && pnpm install > /dev/null 2>&1); then
+    echo "✗ FAILED"
+    fail "pnpm install failed"
+  fi
+  echo "✓"
 }
 
 build() {
-  info "Installing dependencies..."
-  (cd "$LOOPY_HOME" && pnpm install > /dev/null 2>&1) || fail "pnpm install failed"
-
-  info "Building loopy..."
-  (cd "$LOOPY_HOME" && pnpm build > /dev/null 2>&1) || fail "pnpm build failed"
-
-  ok "Build complete"
+  step "Building"
+  if ! (cd "$LOOPY_HOME" && pnpm build > /dev/null 2>&1); then
+    echo "✗ FAILED"
+    fail "pnpm build failed"
+  fi
+  echo "✓"
 }
 
 create_wrapper() {
+  step "Creating wrapper script"
   local bin_dir
   bin_dir="$(dirname "$LOOPY_BIN")"
   mkdir -p "$bin_dir"
@@ -134,6 +133,7 @@ create_wrapper() {
   local target="$LOOPY_HOME/apps/cli/dist/esm/index.js"
 
   if [ ! -f "$target" ]; then
+    echo "✗ FAILED"
     fail "Built entry point not found at $target. Build may have failed."
   fi
 
@@ -143,30 +143,26 @@ exec node "$target" "\$@"
 WRAPPER
 
   chmod +x "$LOOPY_BIN"
-  ok "Wrapper script created at $LOOPY_BIN"
+  echo "✓ $LOOPY_BIN"
 }
 
 check_path() {
   local bin_dir
   bin_dir="$(dirname "$LOOPY_BIN")"
 
+  step "Setting up PATH"
   case ":$PATH:" in
     *":$bin_dir:"*)
-      ok "$bin_dir is in PATH"
+      echo "✓ (already in PATH)"
       ;;
     *)
       local shell_rc
       shell_rc="$(detect_shell_rc)"
-
-      info "Adding $bin_dir to PATH in $shell_rc"
       echo "" >> "$shell_rc"
       echo "export PATH=\"$bin_dir:\$PATH\"" >> "$shell_rc"
-      ok "Added PATH export to $shell_rc"
+      echo "✓ (added to $shell_rc)"
       echo ""
-      echo "  Reload your shell to use loopy:"
-      echo ""
-      echo "    source \"$shell_rc\""
-      echo ""
+      echo "  Run 'source $shell_rc' to reload your PATH"
       ;;
   esac
 }
@@ -189,44 +185,44 @@ detect_shell_rc() {
 }
 
 verify() {
-  info "Verifying installation..."
+  step "Verifying"
   if "$LOOPY_BIN" --version >/dev/null 2>&1; then
-    ok "loopy $("$LOOPY_BIN" --version) installed successfully"
+    echo "✓ $(tput bold)$("$LOOPY_BIN" --version)$(tput sgr0) installed!"
   else
-    warn "loopy --version failed, but the binary exists at $LOOPY_BIN"
+    echo "✗ FAILED"
+    warn "loopy --version failed, but binary exists at $LOOPY_BIN"
   fi
 }
 
-print_getting_started() {
-  echo ""
-  printf "${GREEN}loopy is installed!%b\n" "$NC"
-  echo ""
-  echo "  Get started:"
-  echo ""
-  echo "    cd /path/to/your/repo"
-  echo "    loopy init"
-  echo "    loopy run"
-  echo ""
-  echo "  Uninstall:"
-  echo ""
-  echo "    bash $LOOPY_HOME/uninstall.sh"
-  echo ""
-}
-
 main() {
-  info "Installing loopy (OS: $(detect_os), Arch: $(detect_arch))"
+  echo ""
+  info "Installing loopy $(tput bold)v0.1.0$(tput sgr0)"
+  echo ""
 
   check_node
   check_pnpm
   check_git
   check_gh
 
+  echo ""
   fetch_source
+  install_deps
   build
   create_wrapper
   check_path
+
+  echo ""
   verify
-  print_getting_started
+
+  echo ""
+  printf "${GREEN}✓ loopy is ready!%b\n" "$NC"
+  echo ""
+  echo "  Run 'loopy --version' to verify, then:"
+  echo ""
+  echo "    cd /path/to/your/repo"
+  echo "    loopy init"
+  echo "    loopy run"
+  echo ""
 }
 
 main "$@"
