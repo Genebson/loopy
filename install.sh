@@ -118,10 +118,10 @@ fetch_source() {
 
 build() {
   info "Installing dependencies..."
-  (cd "$LOOPY_HOME" && pnpm install) || fail "pnpm install failed"
+  (cd "$LOOPY_HOME" && pnpm install > /dev/null 2>&1) || fail "pnpm install failed"
 
   info "Building loopy..."
-  (cd "$LOOPY_HOME" && pnpm build) || fail "pnpm build failed"
+  (cd "$LOOPY_HOME" && pnpm build > /dev/null 2>&1) || fail "pnpm build failed"
 
   ok "Build complete"
 }
